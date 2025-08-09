@@ -1,4 +1,4 @@
-# Copyright (C) [年份] [你的名字/公司]
+# Copyright (C) [2025] [阿炜]
 # 本程序是自由软件：你可以根据 GNU GPL v3 协议重新分发或修改它。
 
 DISCLAIMER_TEXT = """
