@@ -29,6 +29,8 @@ Source: ".\Dist\x64\ReagentManagementSystem_x64.exe"; DestDir: "{app}"; DestName
 Source: ".\Dist\x86\ReagentManagementSystem_x86.exe"; DestDir: "{app}"; DestName: "ReagentManagementSystem.exe"; Check: not IsX64; Flags: ignoreversion
 Source: ".\reagent.ico"; DestName: "reagent.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\config.ini"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\README.md"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\images\*"; DestDir: "{app}\images"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; 卸载备份脚本
