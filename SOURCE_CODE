@@ -1,0 +1,42 @@
+===============================================================================
+                        源代码获取声明 (Source Code Notice)
+===============================================================================
+
+本软件遵循 GNU通用公共许可证第三版 (GPL v3) 发布。根据许可证要求，您有权获取、
+修改和再分发本软件的完整源代码。
+
+1. 源代码仓库信息
+   - 项目名称: Reagent Management System
+   - GitHub 仓库地址: https://github.com/WeijieG/ReagentManagementSystem.git
+   - 许可证类型: GPL v3
+
+2. 源代码获取方式
+   您可以通过以下方式获取源代码:
+   a) 通过Git克隆仓库:
+        git clone https://github.com/WeijieG/ReagentManagementSystem.git
+   b) 下载ZIP压缩包:
+        https://github.com/WeijieG/ReagentManagementSystem/archive/refs/heads/main.zip
+   c) 访问仓库主页:
+        https://github.com/WeijieG/ReagentManagementSystem
+
+3. 用户权利
+   根据GPL v3许可证，您拥有以下权利:
+   - 运行本软件用于任何目的
+   - 研究和修改源代码
+   - 分发原始软件副本
+   - 分发您修改后的软件版本
+
+4. 用户义务
+   当您分发本软件或修改版本时，必须:
+   - 提供完整的源代码
+   - 保持相同的许可证条款(GPL v3)
+   - 包含原始版权声明
+   - 向接收者提供此源代码声明
+
+5. 问题与支持
+   如果您在获取源代码时遇到问题，请联系:
+   - GitHub Issues: https://github.com/WeijieG/ReagentManagementSystem/issues
+
+===============================================================================
+此声明最后更新于: 2025.8.14
+===============================================================================

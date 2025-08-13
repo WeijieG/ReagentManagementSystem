@@ -4,8 +4,8 @@ AppName=ReagentManagementSystem
 AppVersion=1.0
 DefaultDirName={autopf}\ReagentManagementSystem
 OutputDir=.\Output
-OutputBaseFilename=药剂仓库安装(正式版)
-SetupIconFile=.\ReagentManagementSystem.ico
+OutputBaseFilename=药剂仓库安装(正式开源版)
+SetupIconFile=.\reagent.ico
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64
@@ -30,7 +30,7 @@ Source: ".\Dist\x86\ReagentManagementSystem_x86.exe"; DestDir: "{app}"; DestName
 Source: ".\reagent.ico"; DestName: "reagent.ico"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\config.ini"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
-Source: ".\README.md"; DestDir: "{app}"; Flags: ignoreversion
+Source: ".\SOURCE_CODE"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\images\*"; DestDir: "{app}\images"; Flags: ignoreversion recursesubdirs createallsubdirs
 
 ; 卸载备份脚本
