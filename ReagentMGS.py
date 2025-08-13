@@ -2,7 +2,7 @@
 # 本程序是自由软件：你可以根据 GNU GPL v3 协议重新分发或修改它。
 
 DISCLAIMER_TEXT = """
-用前须知
+开源说明
 
 本软件基于 PyQt5 开发，遵循 GPL v3 开源协议。
 您有权获得、修改和重新分发本软件的源代码。
@@ -10,11 +10,11 @@ DISCLAIMER_TEXT = """
 如无法使用、需求变更或者需要技术支持，请前往GitHub项目仓库提交Issues
 详细说明请前往 更多-关于-开源说明 查看
 
+用前须知
+
 本软件为方便库存管理而开发，仅供学习参考，禁止使用本软件进行商业行为。用户在使用本软件前应确保：
 
-！！！数据无价！请务必定期备份！！！
-
-1. 定期备份重要数据！！
+1. 定期备份重要数据！！！！！数据无价！请务必定期备份！！！！！
 2. 符合所有适用的法律法规和行业标准
 3. 遵循实验室安全操作规程
 4. 禁止使用本软件进行任何商业行为
@@ -71,10 +71,7 @@ from openpyxl.styles import Alignment, Border, Side, Font
 from openpyxl.utils import get_column_letter
 import json
 import re
-#测试数据
-#test GS1 （01）06954414706901（11）250228（17）260828（10）P0662501721H000360(97)8846215
-#  0106954414706901112502281726082810P0662501721H000361
-# 基蛋生物 D-二聚体检测试剂盒（干式免疫荧光法）
+
 
 # 确定图标文件路径
 if getattr(sys, 'frozen', False):
@@ -2063,12 +2060,13 @@ class MoreDialog(QDialog):
         </ul>
         
         <h1>注</h1>
-            <p>    1、本系统对GS1解析，依赖输入文本自动解析分隔符并添加的括号，不排除换把扫码枪就用不了的可能。</p>
-            <p>    2、理论上符合 GS1-128、GS1 DataBar Omnidirectional、GS1 DataBar Limited，GS1 DataBar Expanded标准的扫码枪，应该都能用，前提是扫码枪设置正确。</p>
-            <p>    3、二维码需要符合GS1标准，才能获取批号、日期等数据，不排除某些非标准的二维码扫码无效。</p>
-            <p>    4、如有需求变更或者功能需要修改，请找最初的负责人，名字留着配置里了。</p>
-            <p>    5、接上条，更新功能不保证所有时候都能用，取决于作者的隧道ip有没有变更，仅有发生需求变更或者作者debug，更新才有用</p>
-            <p>    6、系统有本地完整性校验功能，如出现文件丢失，请立即停止使用，以防应用异常导致数据丢失（ps：能看到这里证明目前应用正常）</p>
+        <ul>
+            <li>本系统对GS1解析，依赖输入文本自动解析分隔符并添加的括号，不排除换把扫码枪就用不了的可能。</li>
+            <li>理论上符合 GS1-128、GS1 DataBar Omnidirectional、GS1 DataBar Limited，GS1 DataBar Expanded标准的扫码枪，应该都能用，前提是扫码枪设置正确。</li>
+            <li>二维码需要符合GS1标准，才能获取批号、日期等数据，不排除某些非标准的二维码扫码无效。</li>
+            <li>如有需求变更或者功能需要修改，请找最初的负责人，名字留着配置里了。</li>
+            <li>系统有本地完整性校验功能，如出现文件丢失，请立即停止使用，以防应用异常导致数据丢失（ps：能看到这里证明目前应用正常）</li>
+        </ul>
         """)
         layout.addWidget(about_text)
         
@@ -2449,7 +2447,7 @@ class ReagentManagementSystem(QMainWindow):
         page_layout.addWidget(QLabel("每页显示:"))
 
         self.page_size_combo = QComboBox()
-        self.page_size_combo.addItems(["15", "30", "50", "100"])
+        self.page_size_combo.addItems(["30", "50", "100"])
         self.page_size_combo.setCurrentText("10")
         self.page_size_combo.setFixedWidth(80)
         self.page_size_combo.currentTextChanged.connect(self.change_page_size)
