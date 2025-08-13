@@ -1972,10 +1972,66 @@ class MoreDialog(QDialog):
         about_text = QTextEdit()
         about_text.setReadOnly(True)
         about_text.setHtml("""
-        <h3>系统说明</h3>
+        <h1>开源声明</h1>
+        <h2>软件许可证</h2>
+        <p>本软件使用 <strong>GPL v3 许可证</strong>。</p>
+        <p>这意味着您拥有以下权利：</p>
+        <ul>
+            <li>自由运行本软件，无论出于何种目的</li>
+            <li>自由学习并修改软件源代码</li>
+            <li>自由分发软件副本</li>
+            <li>自由分发您修改后的软件版本</li>
+        </ul>
+        
+        <h2>依赖框架</h2>
+        <p>本软件基于以下开源框架构建：</p>
+        <ul>
+            <li>
+                <p><strong>PyQt5</strong> - 采用 GPL v3 许可证</p>
+                <p>官网：<a href="https://www.riverbankcomputing.com/software/pyqt/">https://www.riverbankcomputing.com/software/pyqt/</a></p>
+            </li>
+        </ul>
+        
+        <h2>源代码</h2>
+        <p>根据 GPL v3 要求，本软件源代码已公开：</p>
+        <ul>
+            <li>
+                <p>GitHub 仓库：</p>
+                <p><a href="https://github.com/WeijieG/ReagentManagementSystem.git">https://github.com/WeijieG/ReagentManagementSystem.git</a></p>
+            </li>
+        </ul>
+        <p>您可以在该仓库中：</p>
+        <ul>
+            <li>获取完整的项目源代码</li>
+            <li>查看项目文档和构建说明</li>
+            <li>提交问题报告或建议</li>
+            <li>创建分支并贡献代码</li>
+        </ul>
+        
+        <h2>GPL v3 要求</h2>
+        <p>根据许可证要求，当您分发本软件或修改版本时，必须：</p>
+        <ul>
+            <li>提供完整的源代码</li>
+            <li>使用相同的许可证条款（GPL v3）</li>
+            <li>明确版权声明和免责条款</li>
+            <li>向接收者提供获取源代码的方式</li>
+        </ul>
+        
+        <h2>用户权利</h2>
+        <p>根据 GPL v3 许可证，您有权：</p>
+        <ul>
+            <li>自由获取、修改和再分发源代码</li>
+            <li>将软件用于商业目的</li>
+            <li>创建并分发软件的修改版本</li>
+            <li>在遵守许可证条款的前提下，将本软件整合到其他项目中</li>
+        </ul>
+    
+        <h1>项目详情</h1>
+
+        <h2>系统说明</h2>
         <p>试剂库存管理系统是一个专业的实验室试剂管理解决方案，旨在帮助实验室管理人员高效、准确地管理试剂库存。</p>
         
-        <h3>主要功能</h3>
+        <h2>主要功能</h2>
         <ul>
             <li>试剂入库管理</li>
             <li>试剂出库管理</li>
@@ -1988,7 +2044,7 @@ class MoreDialog(QDialog):
             <li>联网更新</li>
         </ul>
 
-        <h3>功能说明书</h3>
+        <h2>功能说明书</h2>
         <ul>
             <li>试剂名称管理</li>
             <p>             对于未匹配过的试剂名，需要手动输入试剂名称，可以在试剂名称管理输入，也可以直接入库，会自动记录。对于GTIN编码匹配过的试剂名称，扫码即可自动填充</p>
@@ -2006,7 +2062,7 @@ class MoreDialog(QDialog):
             <li>联网更新</li>
         </ul>
         
-        <h3>作者的废话</h3>
+        <h1>注</h1>
             <p>    1、本系统对GS1解析，依赖输入文本自动解析分隔符并添加的括号，不排除换把扫码枪就用不了的可能。</p>
             <p>    2、理论上符合 GS1-128、GS1 DataBar Omnidirectional、GS1 DataBar Limited，GS1 DataBar Expanded标准的扫码枪，应该都能用，前提是扫码枪设置正确。</p>
             <p>    3、二维码需要符合GS1标准，才能获取批号、日期等数据，不排除某些非标准的二维码扫码无效。</p>
