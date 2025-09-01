@@ -157,13 +157,14 @@ class ReagentDatabase:
             CREATE TABLE IF NOT EXISTS reagents (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 name TEXT NOT NULL,
-                batch TEXT NOT NULL UNIQUE,  -- 批号唯一
+                batch TEXT NOT NULL,
                 production_date TEXT NOT NULL,
                 expiry_date TEXT NOT NULL,
                 quantity INTEGER NOT NULL,
                 gtin TEXT,  -- 新增GTIN字段
                 qrcode TEXT,  -- 新增二维码原始数据字段
-                FOREIGN KEY (name) REFERENCES reagent_names(name) ON DELETE CASCADE
+                FOREIGN KEY (name) REFERENCES reagent_names(name) ON DELETE CASCADE,
+                UNIQUE (name, batch)  -- 添加复合唯一约束
             )
         ''')
         
@@ -1781,6 +1782,16 @@ class MoreDialog(QDialog):
             #     data['initial_stock'], data['ending_stock']
             # ])
             
+            # 创建空记录，显示历史结余
+            if len(data['records']) == 0:
+                data['records'].append({
+                    'type': 'in',
+                    'date': '',
+                    'quantity': '',
+                    'operator': '',
+                    'remaining': ''
+                })
+
             # 添加记录行
             for record in data['records']:
                 if record['type'] == 'in':
