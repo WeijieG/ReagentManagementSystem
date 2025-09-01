@@ -1868,7 +1868,7 @@ class MoreDialog(QDialog):
                         ws.merge_cells(f'B{batch_start_row}:B{row_idx-1}')
                         ws.merge_cells(f'C{batch_start_row}:C{row_idx-1}')
                         ws.merge_cells(f'I{batch_start_row}:I{row_idx-1}')
-                        ws.merge_cells(f'J{batch_start_row}:J{row_idx}')
+                        ws.merge_cells(f'J{batch_start_row}:J{row_idx-1}')
                         current_batch = batch
                         batch_start_row = row_idx
 
