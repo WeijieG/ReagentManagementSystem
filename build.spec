@@ -14,7 +14,7 @@ except ImportError:
     pyqt5_plugin_dir = ""
 
 a = Analysis(
-    ['V8_1.py'],
+    ['ReagentMGS.py'],
     pathex=[],
     binaries=[],
     datas=[
