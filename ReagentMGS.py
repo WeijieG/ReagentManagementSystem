@@ -428,7 +428,7 @@ class ReagentDatabase:
             self.cursor.execute('''
                 UPDATE reagent_names 
                 SET name = ?, gtin = ?
-                WHERE name = ? AND gtin = ?
+                WHERE name = ? OR gtin = ?
             ''', (new_name, new_gtin, old_name, old_gtin))
             
             # 更新reagents表
