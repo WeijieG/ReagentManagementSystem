@@ -417,6 +417,47 @@ class ReagentDatabase:
             return True
         except sqlite3.IntegrityError:
             return False
+        
+    def update_reagent_name_and_gtin(self, old_name, new_name, old_gtin, new_gtin):
+        """更新试剂名称和GTIN，并级联更新所有相关表"""
+        try:
+            # 开始事务
+            self.conn.execute("BEGIN TRANSACTION")
+            
+            # 更新reagent_names表
+            self.cursor.execute('''
+                UPDATE reagent_names 
+                SET name = ?, gtin = ?
+                WHERE name = ? AND gtin = ?
+            ''', (new_name, new_gtin, old_name, old_gtin))
+            
+            # 更新reagents表
+            self.cursor.execute('''
+                UPDATE reagents 
+                SET name = ?, gtin = ?
+                WHERE name = ? OR gtin = ?
+            ''', (new_name, new_gtin, old_name, old_gtin))
+            
+            # 更新inbound表
+            self.cursor.execute('''
+                UPDATE inbound 
+                SET reagent_name = ?, gtin = ?
+                WHERE reagent_name = ? OR gtin = ?
+            ''', (new_name, new_gtin, old_name, old_gtin))
+            
+            # 更新outbound表
+            self.cursor.execute('''
+                UPDATE outbound 
+                SET reagent_name = ?, gtin = ?
+                WHERE reagent_name = ? OR gtin = ?
+            ''', (new_name, new_gtin, old_name, old_gtin))
+            
+            self.conn.commit()
+            return True
+        except sqlite3.Error as e:
+            self.conn.rollback()
+            print(f"更新失败: {str(e)}")
+            return False
 
 class DownloadThread(QThread):
     progress = pyqtSignal(int)
@@ -953,7 +994,6 @@ class GS1Parser:
 
             parsed_data[key] = processed_data
         
-        print(parsed_data)
         return parsed_data
 
 class ReagentNameManager(QDialog):
@@ -1019,7 +1059,12 @@ class ReagentNameManager(QDialog):
         self.delete_btn = QPushButton("删除选中名称")
         self.delete_btn.clicked.connect(self.delete_reagent_name)
         
+        # 添加编辑按钮
+        self.edit_btn = QPushButton("编辑选中名称")
+        self.edit_btn.clicked.connect(self.edit_reagent_name)
+        
         button_layout.addWidget(self.delete_btn)
+        button_layout.addWidget(self.edit_btn)
         
         layout.addLayout(button_layout)
         layout.addLayout(form_layout)
@@ -1113,6 +1158,146 @@ class ReagentNameManager(QDialog):
                 QMessageBox.information(self, "成功", message)
             else:
                 QMessageBox.warning(self, "删除失败", message)
+
+    def edit_reagent_name(self):
+        selected_items = self.list_widget.selectedItems()
+        if not selected_items:
+            QMessageBox.warning(self, "选择错误", "请先选择一个试剂名称")
+            return
+        
+        name = selected_items[0].text()
+        
+        # 从数据库获取当前GTIN
+        self.db.cursor.execute('SELECT gtin FROM reagent_names WHERE name = ?', (name,))
+        result = self.db.cursor.fetchone()
+        current_gtin = result[0] if result else ""
+        
+        # 创建编辑对话框
+        dialog = ReagentEditDialog(name, current_gtin, self.db, self)
+        if dialog.exec_() == QDialog.Accepted:
+            # 刷新列表
+            self.load_reagent_names()
+            # 通知主窗口刷新数据
+            if hasattr(self.parent(), 'load_data'):
+                self.parent().load_data()
+            if hasattr(self.parent(), 'combined_record_tab') and hasattr(self.parent().combined_record_tab, 'load_data'):
+                self.parent().combined_record_tab.load_data()
+
+# 添加新的编辑对话框类
+class ReagentEditDialog(QDialog):
+    def __init__(self, current_name, current_gtin, db, parent=None):
+        super().__init__(parent)
+        self.db = db
+        self.current_name = current_name
+        self.current_gtin = current_gtin
+        
+        self.setWindowTitle("编辑试剂名称")
+        self.setFixedSize(400, 200)
+        
+        layout = QVBoxLayout()
+        
+        # 标题
+        title_label = QLabel("编辑试剂名称")
+        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
+        
+        # 表单布局
+        form_layout = QFormLayout()
+        
+        # 当前名称显示
+        self.current_name_label = QLabel(current_name)
+        form_layout.addRow("当前名称:", self.current_name_label)
+        
+        # 当前GTIN显示
+        self.current_gtin_label = QLabel(current_gtin if current_gtin else "无")
+        form_layout.addRow("当前GTIN:", self.current_gtin_label)
+        
+        # 扫码框
+        self.barcode_input = QLineEdit()
+        self.barcode_input.setPlaceholderText("不更新GTIN无需扫码")
+        self.barcode_input.textChanged.connect(self.process_barcode)
+        form_layout.addRow("扫码框:", self.barcode_input)
+        
+        # GTIN显示
+        self.new_gtin_label = QLabel("")
+        form_layout.addRow("新GTIN:", self.new_gtin_label)
+        
+        # 新名称输入
+        self.new_name_edit = QLineEdit()
+        self.new_name_edit.setPlaceholderText("输入新名称（留空则不修改）")
+        form_layout.addRow("新名称:", self.new_name_edit)
+        
+        layout.addLayout(form_layout)
+        
+        # 按钮布局
+        button_layout = QHBoxLayout()
+        
+        self.ok_btn = QPushButton("确定")
+        self.ok_btn.clicked.connect(self.accept_edit)
+        
+        self.cancel_btn = QPushButton("关闭")
+        self.cancel_btn.clicked.connect(self.reject)
+        
+        button_layout.addWidget(self.ok_btn)
+        button_layout.addWidget(self.cancel_btn)
+        
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+    
+    def process_barcode(self):
+        """处理扫描的条码"""
+        barcode = self.barcode_input.text().strip()
+        if not barcode:
+            return
+            
+        # 解析条码
+        parsed = GS1Parser.parse_barcode(barcode)
+        
+        # 显示GTIN
+        if parsed.get('GTIN'):
+            self.new_gtin_label.setText(parsed.get('GTIN') or "")
+    
+    def accept_edit(self):
+        new_name = self.new_name_edit.text().strip()
+        new_gtin = self.new_gtin_label.text().strip() or None
+        
+        # 如果没有提供新名称和新GTIN，则无需更新
+        if not new_name and not new_gtin:
+            QMessageBox.information(self, "提示", "未提供任何修改")
+            return
+        
+        try:
+            # 如果提供了新名称，检查是否与现有名称冲突（除了当前名称）
+            if new_name and new_name != self.current_name:
+                self.db.cursor.execute('SELECT COUNT(*) FROM reagent_names WHERE name = ?', (new_name,))
+                if self.db.cursor.fetchone()[0] > 0:
+                    QMessageBox.warning(self, "错误", f"试剂名称 '{new_name}' 已存在")
+                    return
+            
+            # 如果提供了新GTIN，检查是否与现有GTIN冲突（除了当前GTIN）
+            if new_gtin and new_gtin != self.current_gtin:
+                self.db.cursor.execute('SELECT COUNT(*) FROM reagent_names WHERE gtin = ?', (new_gtin,))
+                if self.db.cursor.fetchone()[0] > 0:
+                    QMessageBox.warning(self, "错误", f"GTIN '{new_gtin}' 已被使用")
+                    return
+            
+            # 使用新的方法更新所有相关表
+            success = self.db.update_reagent_name_and_gtin(
+                self.current_name, 
+                new_name if new_name else self.current_name,  # 如果没有提供新名称，保持原名称
+                self.current_gtin, 
+                new_gtin if new_gtin else self.current_gtin,  # 如果没有提供新GTIN，保持原GTIN
+            )
+            
+            if success:
+                QMessageBox.information(self, "成功", "试剂信息已更新，所有相关记录已同步")
+                self.accept()
+            else:
+                QMessageBox.critical(self, "错误", "更新失败，请检查数据库连接")
+                
+        except Exception as e:
+            QMessageBox.critical(self, "错误", f"更新失败: {str(e)}")
 
 class InboundDialog(QDialog):
     def __init__(self, db, parent=None):
