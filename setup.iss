@@ -1,8 +1,8 @@
 ; -- 基础设置 --
 [Setup]
-AppName=药剂仓库
+AppName=ReagentManagementSystem
 AppVersion=1.0
-DefaultDirName={autopf}\药剂仓库
+DefaultDirName={autopf}\ReagentManagementSystem
 OutputDir=.\Output
 OutputBaseFilename=药剂仓库安装(正式开源版)
 SetupIconFile=.\reagent.ico
