@@ -2051,16 +2051,9 @@ class MoreDialog(QDialog):
                 if not current_batch:
                     current_batch = batch
 
-                # 合并名称单元格
-                if name:
-                    if name != current_name and row_idx > name_start_row:
-                        ws.merge_cells(f'A{name_start_row}:A{row_idx-1}')
-                        current_name = name
-                        name_start_row = row_idx
-                
                 # 合并批号单元格
-                if batch:
-                    if batch != current_batch and row_idx > batch_start_row:
+                if name and batch:
+                    if (batch != current_batch) or (name != current_name) and row_idx > batch_start_row:
                         ws.merge_cells(f'B{batch_start_row}:B{row_idx-1}')
                         ws.merge_cells(f'C{batch_start_row}:C{row_idx-1}')
                         ws.merge_cells(f'I{batch_start_row}:I{row_idx-1}')
@@ -2068,6 +2061,12 @@ class MoreDialog(QDialog):
                         current_batch = batch
                         batch_start_row = row_idx
 
+                # 合并名称单元格
+                if name:
+                    if name != current_name and row_idx > name_start_row:
+                        ws.merge_cells(f'A{name_start_row}:A{row_idx-1}')
+                        current_name = name
+                        name_start_row = row_idx
                                 
                 # 最后一行处理
                 if row_idx == len(excel_data):
