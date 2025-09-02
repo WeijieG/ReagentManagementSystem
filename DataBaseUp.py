@@ -79,9 +79,10 @@ def migrate_database():
                 production_date TEXT NOT NULL,
                 expiry_date TEXT NOT NULL,
                 quantity INTEGER NOT NULL,
-                gtin TEXT,
-                qrcode TEXT,
-                UNIQUE (name, batch)
+                gtin TEXT,  -- 新增GTIN字段
+                qrcode TEXT,  -- 新增二维码原始数据字段
+                FOREIGN KEY (name) REFERENCES reagent_names(name) ON DELETE CASCADE,
+                UNIQUE (name, batch)  -- 添加复合唯一约束
             )
         ''')
         
