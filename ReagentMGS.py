@@ -760,12 +760,12 @@ class CombinedRecordPage(QWidget):
         # 设置列宽
         self.table_view.setColumnWidth(0, 60)   # 类型
         self.table_view.setColumnWidth(1, 50)   # ID
-        self.table_view.setColumnWidth(2, 150)  # 试剂名称
+        self.table_view.setColumnWidth(2, 200)  # 试剂名称
         self.table_view.setColumnWidth(3, 120)  # 批号
-        self.table_view.setColumnWidth(4, 120)  # 日期
-        self.table_view.setColumnWidth(5, 60)   # 数量
+        self.table_view.setColumnWidth(4, 220)  # 日期
+        self.table_view.setColumnWidth(5, 90)   # 数量
         self.table_view.setColumnWidth(6, 80)   # 操作员
-        self.table_view.setColumnWidth(7, 80)   # 剩余库存
+        self.table_view.setColumnWidth(7, 90)   # 剩余库存
 
         layout.addWidget(self.table_view)
         self.setLayout(layout)
@@ -2615,13 +2615,13 @@ class ReagentManagementSystem(QMainWindow):
 
         # 设置列宽（调整列宽以适应新列）
         self.table_view.setColumnWidth(0, 50)   # ID
-        self.table_view.setColumnWidth(1, 150)  # 试剂名称
-        self.table_view.setColumnWidth(2, 120)  # 批号
+        self.table_view.setColumnWidth(1, 200)  # 试剂名称
+        self.table_view.setColumnWidth(2, 150)  # 批号
         self.table_view.setColumnWidth(3, 100)  # 生产日期
         self.table_view.setColumnWidth(4, 100)  # 有效期至
         self.table_view.setColumnWidth(5, 80)   # 库存数量
         self.table_view.setColumnWidth(6, 100)  # 剩余有效天数
-        self.table_view.setColumnWidth(7, 120)  # GTIN列
+        self.table_view.setColumnWidth(7, 150)  # GTIN列
 
         self.table_view.verticalHeader().setDefaultSectionSize(30)
         
