@@ -1,8 +1,8 @@
 ; -- 基础设置 --
 [Setup]
-AppName=ReagentManagementSystem
+AppName=药剂仓库
 AppVersion=1.0
-DefaultDirName={autopf}\ReagentManagementSystem
+DefaultDirName={autopf}\药剂仓库
 OutputDir=.\Output
 OutputBaseFilename=药剂仓库安装(正式开源版)
 SetupIconFile=.\reagent.ico
@@ -33,6 +33,9 @@ Source: ".\LICENSE"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\SOURCE_CODE"; DestDir: "{app}"; Flags: ignoreversion
 Source: ".\images\*"; DestDir: "{app}\images"; Flags: ignoreversion recursesubdirs createallsubdirs
 
+;数据库升级脚本打包
+; Source: "database_migration.exe"; DestDir: "{app}"; Flags: ignoreversion
+
 ; 卸载备份脚本
 Source: "uninstall_backup_64.exe"; DestDir: "{app}"; DestName: "uninstall_backup.exe"; Check: IsX64; Flags: ignoreversion
 Source: "uninstall_backup_86.exe"; DestDir: "{app}"; DestName: "uninstall_backup.exe"; Check: not IsX64; Flags: ignoreversion
@@ -56,6 +59,9 @@ Filename: "{tmp}\VC_redist.x86.exe"; Parameters: "/install /quiet /norestart"; \
     StatusMsg: "正在安装运行库..."; Check: (not IsX64) and FileExists(ExpandConstant('{tmp}\VC_redist.x86.exe'))
 Filename: "{tmp}\VC_redist.x64.exe"; Parameters: "/install /quiet /norestart"; \
     StatusMsg: "正在安装运行库..."; Check: (IsX64) and FileExists(ExpandConstant('{tmp}\VC_redist.x64.exe'))
+    
+;执行数据库结构变更脚本
+; Filename: "{app}\database_migration.exe"; Description: "升级数据库结构"; Flags: postinstall runhidden
     
 [UninstallRun]
 ; 在卸载前执行备份
