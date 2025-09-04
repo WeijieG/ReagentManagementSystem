@@ -506,6 +506,7 @@ class DownloadThread(QThread):
 class UpdateDialog(QDialog):
     def __init__(self,jsonData, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setWindowTitle("软件更新")
         self.setFixedSize(400, 300)
         
@@ -606,6 +607,7 @@ class UpdateDialog(QDialog):
 class AutoCompleteComboBox(QComboBox):
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setEditable(True)
         self.setInsertPolicy(QComboBox.NoInsert)
         self.completer().setCompletionMode(QCompleter.PopupCompletion)
@@ -651,6 +653,7 @@ class CombinedRecordPage(QWidget):
         super().__init__(parent)
         self.db = db
         self.date_range_enabled = False
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.init_ui()
         self.load_data()
     
@@ -1002,7 +1005,7 @@ class ReagentNameManager(QDialog):
         self.db = db
         self.setWindowTitle("试剂名称管理")
         self.setFixedSize(500, 400)
-        
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         layout = QVBoxLayout()
 
         # 标题
@@ -1033,60 +1036,33 @@ class ReagentNameManager(QDialog):
         self.list_widget.setAlternatingRowColors(True)
         layout.addWidget(self.list_widget)
 
-        # 在表单布局中添加GTIN输入框
-        form_layout = QFormLayout()
-        
-        self.barcode_input = QLineEdit()
-        self.barcode_input.setPlaceholderText("请扫码")
-        form_layout.addRow("二维码信息:", self.barcode_input)
-        self.barcode_input.textChanged.connect(self.load_reagent_details)
-
-        # 在表单布局中添加GTIN显示
-        self.gtin_label = QLabel("")
-        form_layout.addRow("GTIN:", self.gtin_label)
-
-        self.new_name = QLineEdit()
-        self.new_name.setPlaceholderText("输入新试剂名称")
-        form_layout.addRow("新试剂名称:", self.new_name)
-        
         # 按钮布局
         button_layout = QHBoxLayout()
         
         self.add_btn = QPushButton("添加新名称")
         self.add_btn.clicked.connect(self.add_reagent_name)
-        form_layout.addWidget(self.add_btn)
+        self.add_btn.setFixedHeight(30)
         
         self.delete_btn = QPushButton("删除选中名称")
         self.delete_btn.clicked.connect(self.delete_reagent_name)
+        self.delete_btn.setFixedHeight(30)
         
         # 添加编辑按钮
         self.edit_btn = QPushButton("编辑选中名称")
         self.edit_btn.clicked.connect(self.edit_reagent_name)
-        
-        button_layout.addWidget(self.delete_btn)
+        self.edit_btn.setFixedHeight(30)
+
+        button_layout.addWidget(self.add_btn)
         button_layout.addWidget(self.edit_btn)
+        button_layout.addWidget(self.delete_btn)
         
         layout.addLayout(button_layout)
-        layout.addLayout(form_layout)
-        
-        # 关闭按钮
-        close_btn = QPushButton("关闭")
-        close_btn.clicked.connect(self.accept)
-        layout.addWidget(close_btn, alignment=Qt.AlignRight)
-        
+
         self.setLayout(layout)
         
         # 加载试剂名称
         self.all_names = []  # 存储所有试剂名称
         self.load_reagent_names()
-
-    def load_reagent_details(self):
-        barcode = self.barcode_input.text().strip()
-
-        parsed = GS1Parser.parse_barcode(barcode)
-        # 显示GTIN
-        if parsed.get('GTIN'):
-            self.gtin_label.setText(parsed.get('GTIN') or "")
     
     def load_reagent_names(self):
         """加载所有试剂名称"""
@@ -1112,26 +1088,15 @@ class ReagentNameManager(QDialog):
                 item = QListWidgetItem(name)
                 self.list_widget.addItem(item)
     
-    def add_reagent_name(self):
-        name = self.new_name.text().strip()
-        if not name:
-            QMessageBox.warning(self, "输入错误", "试剂名称不能为空")
-            return
-        
-        gtin = self.gtin_label.text().strip() or None
-        
-        if self.db.add_reagent_name(name,gtin):
-            # 更新本地列表
-            self.all_names.append(name)
-            self.all_names.sort()  # 保持排序
-            self.filter_reagent_names()
-            self.barcode_input.clear()
-            self.gtin_label.clear()
-            self.new_name.clear()
+    def add_new_name(self,name):
+        self.all_names.append(name)
+        self.all_names.sort()  # 保持排序
 
-            QMessageBox.information(self, "成功", f"已添加试剂名称: {name}")
-        else:
-            QMessageBox.warning(self, "添加失败", f"试剂名称 '{name}' 已存在")
+    def add_reagent_name(self):
+        # 创建编辑对话框
+        dialog = AddReagentName(self.db, self)
+        if dialog.exec_() == QDialog.Accepted:
+            self.filter_reagent_names()
     
     def delete_reagent_name(self):
         selected_items = self.list_widget.selectedItems()
@@ -1183,6 +1148,81 @@ class ReagentNameManager(QDialog):
             if hasattr(self.parent(), 'combined_record_tab') and hasattr(self.parent().combined_record_tab, 'load_data'):
                 self.parent().combined_record_tab.load_data()
 
+class AddReagentName(QDialog):
+    def __init__(self, db, parent=None):
+        super().__init__(parent)
+        self.db = db
+        self.setWindowTitle("添加试剂名称")
+        self.setFixedSize(400, 200)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        layout = QVBoxLayout()
+        
+        # 标题
+        title_label = QLabel("添加试剂名称")
+        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
+
+        # 在表单布局中添加GTIN输入框
+        form_layout = QFormLayout()
+        
+        self.barcode_input = QLineEdit()
+        self.barcode_input.setPlaceholderText("请扫码")
+        form_layout.addRow("二维码信息:", self.barcode_input)
+        self.barcode_input.textChanged.connect(self.process_barcode)
+
+        # 在表单布局中添加GTIN显示
+        self.gtin_label = QLabel("")
+        form_layout.addRow("GTIN:", self.gtin_label)
+
+        self.new_name = QLineEdit()
+        self.new_name.setPlaceholderText("输入试剂名称")
+        form_layout.addRow("试剂名称:", self.new_name)
+        layout.addLayout(form_layout)
+
+        # 按钮布局
+        button_layout = QHBoxLayout()
+        button_layout.setContentsMargins(0, 10, 0, 0)
+        
+        ok_btn = QPushButton("确定")
+        ok_btn.clicked.connect(self.add_name)
+        ok_btn.setFixedHeight(30)
+        ok_btn.setFixedWidth(80)
+
+        button_layout.addWidget(ok_btn, alignment=Qt.AlignRight)
+        
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+    
+    def process_barcode(self):
+        """处理扫描的条码"""
+        barcode = self.barcode_input.text().strip()
+        if not barcode:
+            return
+            
+        # 解析条码
+        parsed = GS1Parser.parse_barcode(barcode)
+        
+        # 显示GTIN
+        if parsed.get('GTIN'):
+            self.gtin_label.setText(parsed.get('GTIN') or "")
+    
+    def add_name(self):
+        name = self.new_name.text().strip()
+        if not name:
+            QMessageBox.warning(self, "输入错误", "试剂名称不能为空")
+            return
+        
+        gtin = self.gtin_label.text().strip() or None
+        
+        if self.db.add_reagent_name(name,gtin):
+            QMessageBox.information(self, "成功", f"已添加试剂名称: {name}")
+            if hasattr(self.parent(), 'add_new_name'):
+                self.parent().add_new_name(name)
+            self.accept()
+        else:
+            QMessageBox.warning(self, "添加失败", f"试剂名称 '{name}' 已存在")
+
 # 添加新的编辑对话框类
 class ReagentEditDialog(QDialog):
     def __init__(self, current_name, current_gtin, db, parent=None):
@@ -1190,7 +1230,8 @@ class ReagentEditDialog(QDialog):
         self.db = db
         self.current_name = current_name
         self.current_gtin = current_gtin
-        
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+
         self.setWindowTitle("编辑试剂名称")
         self.setFixedSize(400, 200)
         
@@ -1302,6 +1343,7 @@ class ReagentEditDialog(QDialog):
 class InboundDialog(QDialog):
     def __init__(self, db, parent=None):
         super().__init__(parent)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.db = db
         self.setStyleSheet("""
             QDialog {
@@ -1312,7 +1354,7 @@ class InboundDialog(QDialog):
             }
         """)
         self.setWindowTitle("入库管理")
-        self.setFixedSize(450, 350)
+        self.setFixedSize(500, 290)
 
         layout = QVBoxLayout()
         
@@ -1366,6 +1408,14 @@ class InboundDialog(QDialog):
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.accept_inbound)
         button_box.rejected.connect(self.reject)
+
+        ok_button = button_box.button(QDialogButtonBox.Ok)
+        if ok_button:
+            ok_button.setText("确定")
+
+        cancel_button = button_box.button(QDialogButtonBox.Cancel)
+        if cancel_button:
+            cancel_button.setText("取消")
         
         layout.addWidget(button_box)
         self.setLayout(layout)
@@ -1439,6 +1489,18 @@ class InboundDialog(QDialog):
     #         if name:
     #             self.name_combo.setCurrentText(name)
     
+    def clear_widget_refresh_main(self):
+        self.barcode_input.clear()
+        self.gtin_label.clear()
+        self.batch_combo.clearEditText()
+        self.name_combo.clearEditText()
+        self.quantity_edit.clear()
+        self.operator_edit.clear()
+
+        self.barcode_input.setFocus()
+        if hasattr(self.parent(), 'refresh_widget'):
+            self.parent().refresh_widget()
+
     def accept_inbound(self):
         name = self.name_combo.currentText().strip()
         gtin = self.gtin_label.text().strip() or None
@@ -1486,13 +1548,14 @@ class InboundDialog(QDialog):
         )
         
         QMessageBox.information(self, "成功", f"试剂 {name} (批号: {batch}) 入库成功，数量: {quantity}")
-        self.accept()
+        self.clear_widget_refresh_main()
+        # self.accept()
 
 class OutboundDialog(QDialog):
     def __init__(self, db, parent=None):
         super().__init__(parent)
         self.db = db
-
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.setStyleSheet("""
             QDialog {
                 background-color: #f5f7fa;
@@ -1503,7 +1566,7 @@ class OutboundDialog(QDialog):
         """)
 
         self.setWindowTitle("出库管理")
-        self.setFixedSize(450, 350)
+        self.setFixedSize(500, 290)
         
         layout = QVBoxLayout()
         
@@ -1550,6 +1613,14 @@ class OutboundDialog(QDialog):
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.accept_outbound)
         button_box.rejected.connect(self.reject)
+
+        ok_button = button_box.button(QDialogButtonBox.Ok)
+        if ok_button:
+            ok_button.setText("确定")
+
+        cancel_button = button_box.button(QDialogButtonBox.Cancel)
+        if cancel_button:
+            cancel_button.setText("取消")
         
         layout.addWidget(button_box)
         self.setLayout(layout)
@@ -1605,6 +1676,19 @@ class OutboundDialog(QDialog):
         
         self.stock_label.setText("库存: 0")
     
+    def clear_widget_refresh_main(self):
+        self.barcode_input.clear()
+        self.gtin_label.clear()
+        self.batch_combo.clearEditText()
+        self.name_combo.clearEditText()
+        self.quantity_edit.clear()
+        self.operator_edit.clear()
+        self.stock_label.setText("库存: 0")
+
+        self.barcode_input.setFocus()
+        if hasattr(self.parent(), 'refresh_widget'):
+            self.parent().refresh_widget()
+
     def accept_outbound(self):
         name = self.name_combo.currentText().strip()
         batch = self.batch_combo.currentText().strip()
@@ -1643,7 +1727,8 @@ class OutboundDialog(QDialog):
         
         if success:
             QMessageBox.information(self, "成功", f"试剂 {name} (批号: {batch}) 出库成功，数量: {quantity}")
-            self.accept()
+            self.clear_widget_refresh_main()
+            # self.accept()
         else:
             QMessageBox.warning(self, "出库失败", message)
 
@@ -1653,7 +1738,7 @@ class MoreDialog(QDialog):
         super().__init__(parent)
         self.setWindowTitle("更多功能")
         self.setFixedSize(300, 350)
-        
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         layout = QVBoxLayout()
         layout.setSpacing(10)
 
@@ -1808,7 +1893,7 @@ class MoreDialog(QDialog):
         dialog = QDialog(self)
         dialog.setWindowTitle("选择日期范围")
         dialog.setFixedSize(300, 150)
-        
+        dialog.setWindowFlags(dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         layout = QVBoxLayout()
         form_layout = QFormLayout()
         
@@ -2140,7 +2225,8 @@ class MoreDialog(QDialog):
         about_dialog = QDialog(self)
         about_dialog.setWindowTitle("关于试剂库存管理系统")
         about_dialog.setFixedSize(500, 400)
-        
+        about_dialog.setWindowFlags(about_dialog.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+
         layout = QVBoxLayout()
         
         # 标题
@@ -2277,6 +2363,8 @@ class MoreDialog(QDialog):
 class DisclaimerDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
+
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.setWindowTitle("用前须知")
         self.setFixedSize(600, 500)
@@ -2908,7 +2996,6 @@ class ReagentManagementSystem(QMainWindow):
             print(f"备份过程中出错: {str(e)}")
             return False
         
-
     def cleanup_old_installer(self):
         """清理旧的安装包文件"""
         file = os.path.join(DB_DIR, "saved_path.txt")
@@ -2924,6 +3011,11 @@ class ReagentManagementSystem(QMainWindow):
                 print(f"已删除安装包: {file_path}")
             except Exception as e:
                 print(f"删除安装包失败: {str(e)}")
+
+    def refresh_widget(self):
+        self.load_data()
+        # 刷新出入库记录页面
+        self.combined_record_tab.load_data()
 
 if __name__ == "__main__":
     config_path = os.path.join(application_path, 'config.ini')
