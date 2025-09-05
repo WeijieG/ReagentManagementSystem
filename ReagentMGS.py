@@ -668,7 +668,6 @@ class CombinedRecordPage(QWidget):
         self.barcode_input.textChanged.connect(self.process_barcode)
 
         barcode_clear_btn = QPushButton("清除")
-        barcode_clear_btn.setFixedHeight(20)
         barcode_clear_btn.clicked.connect(self.clear_barcode)
         
         barcode_layout.addWidget(QLabel("条码扫描:"))
@@ -686,7 +685,14 @@ class CombinedRecordPage(QWidget):
         self.record_type_combo.addItem("出库记录")
         self.record_type_combo.setFixedWidth(100)
         self.record_type_combo.currentIndexChanged.connect(self.load_data)
-        
+        self.record_type_combo.setEditable(True)  # 允许编辑，这是自动补全的前提
+        self.record_type_combo.setInsertPolicy(QComboBox.NoInsert) 
+
+        # 配置自动补全器
+        completer = self.record_type_combo.completer()
+        completer.setCompletionMode(QCompleter.PopupCompletion) 
+        completer.setFilterMode(Qt.MatchContains) 
+
         self.name_search = QLineEdit()
         self.name_search.setPlaceholderText("试剂名称")
         self.name_search.setFixedWidth(200)
@@ -723,7 +729,6 @@ class CombinedRecordPage(QWidget):
         
         # 重置日期按钮
         reset_date_btn = QPushButton("重置日期")
-        reset_date_btn.setFixedHeight(30)
         reset_date_btn.clicked.connect(self.reset_date_range)
         date_layout.addWidget(reset_date_btn)
         
@@ -825,6 +830,10 @@ class CombinedRecordPage(QWidget):
         batch_filter = self.batch_search.text().strip()
         record_type = self.record_type_combo.currentText()
         
+        if record_type != "入库记录" and  record_type != "出库记录":
+            record_type= "全部记录"
+            self.record_type_combo.lineEdit().setText(record_type)
+
         # 获取日期范围（如果启用）
         start_date = None
         end_date = None
@@ -1345,20 +1354,34 @@ class InboundDialog(QDialog):
         super().__init__(parent)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         self.db = db
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #f5f7fa;
-            }
-            QLabel {
-                font-weight: 500;
-            }
-        """)
         self.setWindowTitle("入库管理")
-        self.setFixedSize(500, 290)
+        self.setFixedSize(800, 500)
 
-        layout = QVBoxLayout()
+        # 创建主水平布局
+        main_layout = QHBoxLayout()
+
+        # 左侧布局 - 名称列表
+        left_layout = QVBoxLayout()
+        left_layout.setContentsMargins(0, 0, 10, 0)
         
+        left_title = QLabel("试剂名称列表")
+        left_title.setFont(QFont("Arial", 10, QFont.Bold))
+        left_layout.addWidget(left_title)
+
+        # 添加名称列表
+        self.name_list = QListWidget()
+        self.name_list.itemDoubleClicked.connect(self.on_name_double_clicked)
+        left_layout.addWidget(self.name_list)
+        # 右侧布局 - 表单
+        right_layout = QVBoxLayout()
+        # right_layout.setContentsMargins(0, 0, 0, 0)
+
         form_layout = QFormLayout()
+        form_layout.setVerticalSpacing(15)
+
+        right_title = QLabel("入库表单")
+        right_title.setFont(QFont("Arial", 10, QFont.Bold))
+        right_layout.addWidget(right_title)
 
         # 添加扫码输入框
         self.barcode_input = QLineEdit()
@@ -1370,15 +1393,11 @@ class InboundDialog(QDialog):
         self.gtin_label = QLabel("")
         form_layout.addRow("GTIN:", self.gtin_label)
         
-        # 使用自定义的自动完成下拉框
-        self.name_combo = AutoCompleteComboBox()
-        self.name_combo.setEditable(True)
-        self.name_combo.setPlaceholderText("输入试剂名称")
-        self.name_combo.lineEdit().textChanged.connect(self.update_batches)
-        self.name_combo.set_items(self.db.get_reagent_names())
-        # self.name_combo.lineEdit().textEdited.connect(self.update_batches)
-        form_layout.addRow("试剂名称:", self.name_combo)
-        
+        self.name_edit = QLineEdit()
+        self.name_edit.textChanged.connect(self.filter_name_list)
+        self.name_edit.setPlaceholderText("输入试剂名称")
+        form_layout.addRow("试剂名称:", self.name_edit)
+
         self.batch_combo = AutoCompleteComboBox()
         self.batch_combo.setPlaceholderText("输入批号")
         # self.batch_combo.lineEdit().textEdited.connect(self.on_batch_changed)
@@ -1403,7 +1422,8 @@ class InboundDialog(QDialog):
         self.operator_edit.setPlaceholderText("输入操作员姓名")
         form_layout.addRow("操作员:", self.operator_edit)
 
-        layout.addLayout(form_layout)
+        right_layout.addLayout(form_layout)
+        right_layout.addStretch()
         
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.accept_inbound)
@@ -1417,12 +1437,43 @@ class InboundDialog(QDialog):
         if cancel_button:
             cancel_button.setText("取消")
         
-        layout.addWidget(button_box)
-        self.setLayout(layout)
-        
-        # self.update_batches()
+        right_layout.addWidget(button_box)
 
+        # 设置左右布局比例
+        main_layout.addLayout(left_layout, 1)  # 左侧占1份
+        main_layout.addLayout(right_layout, 2)  # 右侧占2份
+        
+        self.setLayout(main_layout)
+                
+        # 默认初始化全部名称
+        self.filter_name_list()
+        # 默认聚焦
+        self.barcode_input.setFocus()
+
+    def filter_name_list(self):
+        """根据输入过滤名称列表"""
+        filter_text = self.name_edit.text().strip().lower()
+        all_names = self.db.get_reagent_names()
+        
+        self.name_list.clear()
+        
+        if not filter_text:
+            # 如果没有输入，显示所有名称
+            for name in all_names:
+                self.name_list.addItem(name)
+            return
+        
+        # 过滤匹配的名称
+        for name in all_names:
+            if filter_text in name.lower():
+                self.name_list.addItem(name)
+
+        self.update_batches()
     
+    def on_name_double_clicked(self, item):
+        """双击名称列表项时填充名称输入框"""
+        self.name_edit.setText(item.text())
+
     def process_barcode(self):
         """处理扫描的条码"""
         barcode = self.barcode_input.text().strip()
@@ -1437,7 +1488,7 @@ class InboundDialog(QDialog):
             self.gtin_label.setText(parsed.get('GTIN') or "")
             name = self.db.get_name_by_gtin(parsed.get('GTIN'))
             if name:
-                self.name_combo.setCurrentText(name)
+                self.name_edit.setText(name)
         
         # 自动填充批号
         if parsed.get('Batch/Lot Number'):
@@ -1475,25 +1526,18 @@ class InboundDialog(QDialog):
         # self.barcode_input.clear()
     
     def update_batches(self):
-        current_name = self.name_combo.currentText()
+        current_name = self.name_edit.text().strip()
         if current_name:
             batches = self.db.get_batches_by_name(current_name)
             self.batch_combo.set_items(batches)
         else:
             self.batch_combo.set_items([])
     
-    # def on_batch_changed(self, text):
-    #     # 如果批号被修改，尝试自动填充名称
-    #     if text:
-    #         name = self.db.get_name_by_batch(text)
-    #         if name:
-    #             self.name_combo.setCurrentText(name)
-    
     def clear_widget_refresh_main(self):
         self.barcode_input.clear()
         self.gtin_label.clear()
         self.batch_combo.clearEditText()
-        self.name_combo.clearEditText()
+        self.name_edit.clear()
         self.quantity_edit.clear()
         self.operator_edit.clear()
 
@@ -1502,7 +1546,7 @@ class InboundDialog(QDialog):
             self.parent().refresh_widget()
 
     def accept_inbound(self):
-        name = self.name_combo.currentText().strip()
+        name = self.name_edit.text().strip()
         gtin = self.gtin_label.text().strip() or None
         batch = self.batch_combo.currentText().strip()
         production_date = self.production_date_edit.date().toString("yyyy-MM-dd")
@@ -1556,21 +1600,33 @@ class OutboundDialog(QDialog):
         super().__init__(parent)
         self.db = db
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
-        self.setStyleSheet("""
-            QDialog {
-                background-color: #f5f7fa;
-            }
-            QLabel {
-                font-weight: 500;
-            }
-        """)
-
         self.setWindowTitle("出库管理")
-        self.setFixedSize(500, 290)
+        self.setFixedSize(800, 500)
         
-        layout = QVBoxLayout()
+        # 创建主水平布局
+        main_layout = QHBoxLayout()
+
+        # 左侧布局 - 名称列表
+        left_layout = QVBoxLayout()
+        left_layout.setContentsMargins(0, 0, 10, 0)
+        
+        left_title = QLabel("试剂名称列表")
+        left_title.setFont(QFont("Arial", 10, QFont.Bold))
+        left_layout.addWidget(left_title)
+
+        # 添加名称列表
+        self.name_list = QListWidget()
+        self.name_list.itemDoubleClicked.connect(self.on_name_double_clicked)
+        left_layout.addWidget(self.name_list)
+
+        right_layout = QVBoxLayout()
+
+        right_title = QLabel("出库表单")
+        right_title.setFont(QFont("Arial", 10, QFont.Bold))
+        right_layout.addWidget(right_title)
         
         form_layout = QFormLayout()
+        form_layout.setVerticalSpacing(20)
 
         # 添加扫码输入框
         self.barcode_input = QLineEdit()
@@ -1582,13 +1638,11 @@ class OutboundDialog(QDialog):
         self.gtin_label = QLabel("")
         form_layout.addRow("GTIN:", self.gtin_label)
         
-        # 使用自定义的自动完成下拉框
-        self.name_combo = AutoCompleteComboBox()
-        self.name_combo.setEditable(True)
-        self.name_combo.setPlaceholderText("输入试剂名称")
-        self.name_combo.lineEdit().textChanged.connect(self.update_batches)
-        self.name_combo.set_items(self.db.get_reagent_names())
-        form_layout.addRow("试剂名称:", self.name_combo)
+        # 名称输入框
+        self.name_edit = QLineEdit()
+        self.name_edit.setPlaceholderText("输入试剂名称")
+        self.name_edit.textChanged.connect(self.filter_name_list)
+        form_layout.addRow("试剂名称:", self.name_edit)
         
         self.batch_combo = AutoCompleteComboBox()
         self.batch_combo.setPlaceholderText("输入批号")
@@ -1608,8 +1662,9 @@ class OutboundDialog(QDialog):
         self.operator_edit.setPlaceholderText("输入操作员姓名")
         form_layout.addRow("操作员:", self.operator_edit)
 
-        layout.addLayout(form_layout)
-        
+        right_layout.addLayout(form_layout)
+        right_layout.addStretch()
+
         button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
         button_box.accepted.connect(self.accept_outbound)
         button_box.rejected.connect(self.reject)
@@ -1622,10 +1677,43 @@ class OutboundDialog(QDialog):
         if cancel_button:
             cancel_button.setText("取消")
         
-        layout.addWidget(button_box)
-        self.setLayout(layout)
+        right_layout.addWidget(button_box)
+
+        # 设置左右布局比例
+        main_layout.addLayout(left_layout, 1)  # 左侧占1份
+        main_layout.addLayout(right_layout, 2)  # 右侧占2份
         
+        self.setLayout(main_layout)
+                
+        self.filter_name_list()
+        # 默认聚焦
+        self.barcode_input.setFocus()
+
+    def filter_name_list(self):
+        """根据输入过滤名称列表"""
+        filter_text = self.name_edit.text().strip().lower()
+        all_names = self.db.get_reagent_names()
+        
+        self.name_list.clear()
+        
+        # 如果没有过滤文本，显示所有名称
+        if not filter_text:
+            for name in all_names:
+                item = QListWidgetItem(name)
+                self.name_list.addItem(item)
+            return
+        
+        # 过滤匹配的名称
+        for name in all_names:
+            if filter_text in name.lower():
+                item = QListWidgetItem(name)
+                self.name_list.addItem(item)
+
         self.update_batches()
+    
+    def on_name_double_clicked(self, item):
+        """双击名称列表项时填充名称输入框"""
+        self.name_edit.setText(item.text())
     
     def process_barcode(self):
         """处理扫描的条码"""
@@ -1641,7 +1729,7 @@ class OutboundDialog(QDialog):
             self.gtin_label.setText(parsed.get('GTIN') or "")
             name = self.db.get_name_by_gtin(parsed.get('GTIN'))
             if name:
-                self.name_combo.setCurrentText(name)
+                self.name_edit.setText(name)
         
         # 自动填充批号
         if parsed.get('Batch/Lot Number'):
@@ -1649,23 +1737,15 @@ class OutboundDialog(QDialog):
             self.update_stock_info()
 
     def update_batches(self):
-        current_name = self.name_combo.currentText()
+        current_name = self.name_edit.text().strip()
         if current_name:
             batches = self.db.get_batches_by_name(current_name)
             self.batch_combo.set_items(batches)
         else:
             self.batch_combo.set_items([])
     
-    # def on_batch_changed(self, text):
-    #     # 如果批号被修改，尝试自动填充名称
-    #     if text:
-    #         name = self.db.get_name_by_batch(text)
-    #         if name:
-    #             self.name_combo.setCurrentText(name)
-    #             self.update_stock_info()
-    
     def update_stock_info(self):
-        name = self.name_combo.currentText().strip()
+        name = self.name_edit.text().strip()
         batch = self.batch_combo.currentText().strip()
         
         if name and batch:
@@ -1680,7 +1760,7 @@ class OutboundDialog(QDialog):
         self.barcode_input.clear()
         self.gtin_label.clear()
         self.batch_combo.clearEditText()
-        self.name_combo.clearEditText()
+        self.name_edit.clear()
         self.quantity_edit.clear()
         self.operator_edit.clear()
         self.stock_label.setText("库存: 0")
@@ -1690,7 +1770,7 @@ class OutboundDialog(QDialog):
             self.parent().refresh_widget()
 
     def accept_outbound(self):
-        name = self.name_combo.currentText().strip()
+        name = self.name_edit.text().strip()
         batch = self.batch_combo.currentText().strip()
         quantity = self.quantity_edit.text().strip()
         operator = self.operator_edit.text().strip()
@@ -2547,85 +2627,85 @@ class ReagentManagementSystem(QMainWindow):
         button_layout.setContentsMargins(5, 5, 5, 5)
 
         self.inbound_btn = QPushButton("入库管理")
-        self.inbound_btn.setFixedHeight(50)
-        self.inbound_btn.setFixedWidth(120)
-        self.inbound_btn.setStyleSheet("font-size: 15px;")
+        self.inbound_btn.setFixedHeight(40)
+        self.inbound_btn.setFixedWidth(150)
+        self.inbound_btn.setStyleSheet("font-size: 16px;font-weight: 500; border-radius: 20px;")
         self.inbound_btn.clicked.connect(self.show_inbound_dialog)
-        self.inbound_btn.setStyleSheet(f"""
-            QPushButton {{
-                border: none;
-                background-image: url({get_image_path('normal.png')});
-                background-repeat: no-repeat;
-                background-position: center;
-            }}
-            QPushButton:hover {{
-                background-image: url({get_image_path('hover.png')});
-            }}
-            QPushButton:pressed {{
-                background-image: url({get_image_path('pressed.png')});
-            }}
-        """)
+        # self.inbound_btn.setStyleSheet(f"""
+        #     QPushButton {{
+        #         border: none;
+        #         background-image: url({get_image_path('normal.png')});
+        #         background-repeat: no-repeat;
+        #         background-position: center;
+        #     }}
+        #     QPushButton:hover {{
+        #         background-image: url({get_image_path('hover.png')});
+        #     }}
+        #     QPushButton:pressed {{
+        #         background-image: url({get_image_path('pressed.png')});
+        #     }}
+        # """)
 
         self.outbound_btn = QPushButton("出库管理")
-        self.outbound_btn.setFixedHeight(50)
-        self.outbound_btn.setFixedWidth(120)
-        self.outbound_btn.setStyleSheet("font-size: 15px;")
+        self.outbound_btn.setFixedHeight(40)
+        self.outbound_btn.setFixedWidth(150)
+        self.outbound_btn.setStyleSheet("font-size: 16px;font-weight: 500; border-radius: 20px;")
         self.outbound_btn.clicked.connect(self.show_outbound_dialog)
-        self.outbound_btn.setStyleSheet(f"""
-            QPushButton {{
-                border: none;
-                background-image: url({get_image_path('normal.png')});
-                background-repeat: no-repeat;
-                background-position: center;
-            }}
-            QPushButton:hover {{
-                background-image: url({get_image_path('hover.png')});
-            }}
-            QPushButton:pressed {{
-                background-image: url({get_image_path('pressed.png')});
-            }}
-        """)
+        # self.outbound_btn.setStyleSheet(f"""
+        #     QPushButton {{
+        #         border: none;
+        #         background-image: url({get_image_path('normal.png')});
+        #         background-repeat: no-repeat;
+        #         background-position: center;
+        #     }}
+        #     QPushButton:hover {{
+        #         background-image: url({get_image_path('hover.png')});
+        #     }}
+        #     QPushButton:pressed {{
+        #         background-image: url({get_image_path('pressed.png')});
+        #     }}
+        # """)
         
         self.name_manager_btn = QPushButton("试剂名称管理")
-        self.name_manager_btn.setFixedHeight(50)
-        self.name_manager_btn.setFixedWidth(120)
-        self.name_manager_btn.setStyleSheet("font-size: 15px;")
+        self.name_manager_btn.setFixedHeight(40)
+        self.name_manager_btn.setFixedWidth(150)
+        self.name_manager_btn.setStyleSheet("font-size: 16px;font-weight: 500; border-radius: 20px;")
         self.name_manager_btn.clicked.connect(self.show_name_manager)
-        self.name_manager_btn.setStyleSheet(f"""
-            QPushButton {{
-                border: none;
-                background-image: url({get_image_path('normal.png')});
-                background-repeat: no-repeat;
-                background-position: center;
-            }}
-            QPushButton:hover {{
-                background-image: url({get_image_path('hover.png')});
-            }}
-            QPushButton:pressed {{
-                background-image: url({get_image_path('pressed.png')});
-            }}
-        """)
+        # self.name_manager_btn.setStyleSheet(f"""
+        #     QPushButton {{
+        #         border: none;
+        #         background-image: url({get_image_path('normal.png')});
+        #         background-repeat: no-repeat;
+        #         background-position: center;
+        #     }}
+        #     QPushButton:hover {{
+        #         background-image: url({get_image_path('hover.png')});
+        #     }}
+        #     QPushButton:pressed {{
+        #         background-image: url({get_image_path('pressed.png')});
+        #     }}
+        # """)
 
         # 新增"更多"按钮
         self.more_btn = QPushButton("更多功能")
-        self.more_btn.setFixedHeight(50)
-        self.more_btn.setFixedWidth(120)
-        self.more_btn.setStyleSheet("font-size: 15px;")
+        self.more_btn.setFixedHeight(40)
+        self.more_btn.setFixedWidth(150)
+        self.more_btn.setStyleSheet("font-size: 16px;font-weight: 500; border-radius: 20px;")
         self.more_btn.clicked.connect(self.show_more_dialog)
-        self.more_btn.setStyleSheet(f"""
-            QPushButton {{
-                border: none;
-                background-image: url({get_image_path('normal.png')});
-                background-repeat: no-repeat;
-                background-position: center;
-            }}
-            QPushButton:hover {{
-                background-image: url({get_image_path('hover.png')});
-            }}
-            QPushButton:pressed {{
-                background-image: url({get_image_path('pressed.png')});
-            }}
-        """)
+        # self.more_btn.setStyleSheet(f"""
+        #     QPushButton {{
+        #         border: none;
+        #         background-image: url({get_image_path('normal.png')});
+        #         background-repeat: no-repeat;
+        #         background-position: center;
+        #     }}
+        #     QPushButton:hover {{
+        #         background-image: url({get_image_path('hover.png')});
+        #     }}
+        #     QPushButton:pressed {{
+        #         background-image: url({get_image_path('pressed.png')});
+        #     }}
+        # """)
         
         button_layout.addWidget(self.inbound_btn)
         button_layout.addWidget(self.outbound_btn)
@@ -2650,7 +2730,6 @@ class ReagentManagementSystem(QMainWindow):
         self.barcode_input.textChanged.connect(self.process_barcode)
 
         barcode_clear_btn = QPushButton("清除")
-        barcode_clear_btn.setFixedHeight(20)
         barcode_clear_btn.clicked.connect(self.clear_barcode)
         
         # barcode_layout.addRow("条码扫描:", self.barcode_input)
@@ -2697,8 +2776,6 @@ class ReagentManagementSystem(QMainWindow):
         ])
         self.table_view.setModel(self.model)
         self.table_view.setSelectionBehavior(QTableView.SelectRows)
-        # 不占满，运行调整
-        # self.table_view.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.table_view.setAlternatingRowColors(True)
 
         # 设置列宽（调整列宽以适应新列）
@@ -2718,13 +2795,6 @@ class ReagentManagementSystem(QMainWindow):
         # 创建分页控件
         page_layout = QHBoxLayout()
         
-        self.prev_btn = QPushButton("上一页")
-        self.prev_btn.clicked.connect(self.prev_page)
-        
-        self.next_btn = QPushButton("下一页")
-        self.next_btn.clicked.connect(self.next_page)
-        
-        self.page_label = QLabel("第 1 页")
 
         # 添加每页显示条数选择框
         page_layout.addWidget(QLabel("每页显示:"))
@@ -2734,14 +2804,39 @@ class ReagentManagementSystem(QMainWindow):
         self.page_size_combo.setCurrentText("10")
         self.page_size_combo.setFixedWidth(80)
         self.page_size_combo.currentTextChanged.connect(self.change_page_size)
+        self.page_size_combo.setEditable(True)  # 允许编辑，这是自动补全的前提
+        self.page_size_combo.setInsertPolicy(QComboBox.NoInsert) 
+
+        # 配置自动补全器
+        completer = self.page_size_combo.completer()
+        completer.setCompletionMode(QCompleter.PopupCompletion) 
+        completer.setFilterMode(Qt.MatchContains) 
+
         page_layout.addWidget(self.page_size_combo)
         
+        self.prev_btn = QPushButton("上一页")
+        self.prev_btn.clicked.connect(self.prev_page)
+        
+        self.next_btn = QPushButton("下一页")
+        self.next_btn.clicked.connect(self.next_page)
+        
+        self.page_label = QLabel("第 1 页")
+
         page_layout.addStretch()
         page_layout.addWidget(self.prev_btn)
         page_layout.addWidget(self.page_label)
         page_layout.addWidget(self.next_btn)
         page_layout.addStretch()
-        
+
+        right_widget = QWidget()
+        right_widget.setFixedWidth(150)
+        right_widget.setStyleSheet("""
+            background-color: transparent;
+            border: none;
+        """)
+        right_widget.setAttribute(Qt.WA_TransparentForMouseEvents)
+        page_layout.addWidget(right_widget)      # 右侧不可视占位
+
         inventory_layout.addLayout(page_layout)
         
         self.inventory_tab.setLayout(inventory_layout)
@@ -2750,7 +2845,6 @@ class ReagentManagementSystem(QMainWindow):
         # 添加选项卡
         self.tab_widget.addTab(self.inventory_tab, "库存管理")
         self.tab_widget.addTab(self.combined_record_tab, "出入库记录")
-        
         main_layout.addWidget(self.tab_widget)
 
         config = configparser.ConfigParser()
@@ -3037,6 +3131,243 @@ if __name__ == "__main__":
     
     # 设置应用样式
     app.setStyle("Fusion")
+    app.setStyleSheet("""
+        /* 全局样式 - 浅灰色为主色调，减少亮度 */
+        QMainWindow, QDialog {
+            background-color: #f5f5f5;
+            font-family: "Microsoft YaHei", "Segoe UI", Arial, sans-serif;
+        }
+        
+        /* 按钮样式 - 更小更精致 */
+        QPushButton {
+            background-color: #e9e9e9;
+            color: #444444;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            padding: 5px 12px;
+            font-size: 14px;
+            font-weight: 450;
+        }
+        
+        QPushButton:hover {
+            background-color: #dcdcdc;
+            border-color: #b0b0b0;
+        }
+        
+        QPushButton:pressed {
+            background-color: #cfcfcf;
+        }
+        
+        QPushButton:disabled {
+            background-color: #f0f0f0;
+            color: #a0a0a0;
+            border-color: #d0d0d0;
+        }
+        
+        /* 主要操作按钮样式 */
+        QPushButton.primary {
+            background-color: #4a6fa5;
+            color: white;
+            border: 1px solid #3a5785;
+        }
+        
+        QPushButton.primary:hover {
+            background-color: #5d84c3;
+            border-color: #4a6fa5;
+        }
+        
+        QPushButton.primary:pressed {
+            background-color: #3a5785;
+        }
+        
+        /* 输入框样式 */
+        QLineEdit, QDateEdit, QComboBox {
+            border: 1px solid #c0c0c0;
+            border-radius: 4px;
+            padding: 8px 10px;
+            background-color: #ffffff;
+            font-size: 14px;
+            min-height: 18px;
+            color: #333333;
+        }
+        
+        QLineEdit:focus, QDateEdit:focus, QComboBox:focus {
+            border-color: #80bdff;
+            outline: 0;
+        }
+        
+        QLineEdit[readOnly="true"] {
+            background-color: #f0f0f0;
+        }
+        
+        /* 标签样式 */
+        QLabel {
+            font-size: 16px;
+            color: #444444;
+            font-weight: 500;
+        }
+        
+        QLabel.title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #4a6fa5;
+        }
+        
+        /* 列表样式 */
+        QListWidget {
+            border: 1px solid #c0c0c0;
+            border-radius: 4px;
+            background-color: #ffffff;
+            font-size: 14px;
+            padding: 4px;
+            color: #444444;
+        }
+        
+        QListWidget::item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        QListWidget::item:selected {
+            background-color: #e3f2fd;
+            color: #1976d2;
+            border-radius: 3px;
+        }
+        
+        QListWidget::item:hover {
+            background-color: #f0f0f0;
+        }
+        
+        /* 表格样式 */
+        QTableView {
+            background-color: #ffffff;
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            gridline-color: #e0e0e0;
+            font-size: 13px;
+            color: #444444;
+        }
+        
+        QTableView::item:selected {
+            background-color: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        QHeaderView::section {
+            background-color: #f0f0f0;
+            color: #444444;
+            padding: 8px;
+            border: 1px solid #d0d0d0;
+            font-weight: 500;
+        }
+        
+        /* 选项卡样式 */
+        QTabWidget::pane {
+            border: 1px solid #d0d0d0;
+            border-radius: 4px;
+            background-color: #ffffff;
+            margin-top: -1px;
+        }
+        
+        QTabBar::tab {
+            background-color: #e9e9e9;
+            color: #444444;
+            padding: 8px 16px;
+            border: 1px solid #d0d0d0;
+            border-bottom: none;
+            border-top-left-radius: 4px;
+            border-top-right-radius: 4px;
+            margin-right: 2px;
+            font-weight: 500;
+            width: 80px; 
+            height: 17px;
+        }
+        
+        QTabBar::tab:selected {
+            background-color: #ffffff;
+            color: #4a6fa5;
+            border-color: #d0d0d0;
+            border-bottom: 1px solid white;
+        }
+        
+        QTabBar::tab:hover {
+            background-color: #dcdcdc;
+        }
+        
+        /* 分组框样式 */
+        QGroupBox {
+            font-weight: bold;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            margin-top: 10px;
+            padding-top: 15px;
+            background-color: #f5f5f5;
+            color: #444444;
+        }
+        
+        QGroupBox::title {
+            subcontrol-origin: margin;
+            subcontrol-position: top center;
+            padding: 0 8px;
+            background-color: #e9e9e9;
+            color: #444444;
+            border-radius: 4px;
+            border: 1px solid #d0d0d0;
+        }
+        
+        /* 状态栏样式 */
+        QStatusBar {
+            background-color: #e9e9e9;
+            color: #666666;
+            font-size: 12px;
+            border-top: 1px solid #d0d0d0;
+        }
+        
+        QStatusBar::item {
+            border: none;
+        }
+        
+        /* 滚动条样式 */
+        QScrollBar:vertical {
+            border: none;
+            background-color: #f0f0f0;
+            width: 10px;
+            margin: 0px;
+        }
+        
+        QScrollBar::handle:vertical {
+            background-color: #c0c0c0;
+            border-radius: 4px;
+            min-height: 20px;
+        }
+        
+        QScrollBar::handle:vertical:hover {
+            background-color: #a0a0a0;
+        }
+        
+        QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+            height: 0px;
+        }
+        
+        /* 对话框按钮盒样式 */
+        QDialogButtonBox {
+            button-layout: 0; /* WinLayout */
+        }
+        
+        QDialogButtonBox QPushButton {
+            min-width: 80px;
+        }
+        
+        /* 表单样式 */
+        QFormLayout {
+            margin: 0;
+            padding: 0;
+        }
+        
+        QFormLayout > QLabel {
+            padding-right: 10px;
+        }
+    """)
 
     # test1 = f"0106936415919665{chr(29)}11240819{chr(29)}17260218{chr(29)}102024050123{chr(29)}97105-002512-00{chr(29)}98AAX202405012303531"
     # parsed = GS1Parser.parse_barcode(test1)
