@@ -1162,7 +1162,7 @@ class AddReagentName(QDialog):
         super().__init__(parent)
         self.db = db
         self.setWindowTitle("添加试剂名称")
-        self.setFixedSize(400, 200)
+        self.setFixedSize(400, 250)
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
         layout = QVBoxLayout()
         
@@ -1174,7 +1174,9 @@ class AddReagentName(QDialog):
 
         # 在表单布局中添加GTIN输入框
         form_layout = QFormLayout()
-        
+        form_layout.setContentsMargins(10, 20, 10, 10)
+        form_layout.setVerticalSpacing(10)
+
         self.barcode_input = QLineEdit()
         self.barcode_input.setPlaceholderText("请扫码")
         form_layout.addRow("二维码信息:", self.barcode_input)
@@ -1188,6 +1190,7 @@ class AddReagentName(QDialog):
         self.new_name.setPlaceholderText("输入试剂名称")
         form_layout.addRow("试剂名称:", self.new_name)
         layout.addLayout(form_layout)
+        layout.addStretch()
 
         # 按钮布局
         button_layout = QHBoxLayout()
@@ -1242,7 +1245,7 @@ class ReagentEditDialog(QDialog):
         self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
 
         self.setWindowTitle("编辑试剂名称")
-        self.setFixedSize(400, 200)
+        self.setFixedSize(400, 300)
         
         layout = QVBoxLayout()
         
@@ -1254,7 +1257,9 @@ class ReagentEditDialog(QDialog):
         
         # 表单布局
         form_layout = QFormLayout()
-        
+        form_layout.setContentsMargins(10, 20, 10, 10)
+
+        form_layout.setVerticalSpacing(10)
         # 当前名称显示
         self.current_name_label = QLabel(current_name)
         form_layout.addRow("当前名称:", self.current_name_label)
@@ -1279,7 +1284,8 @@ class ReagentEditDialog(QDialog):
         form_layout.addRow("新名称:", self.new_name_edit)
         
         layout.addLayout(form_layout)
-        
+        layout.addStretch()
+
         # 按钮布局
         button_layout = QHBoxLayout()
         
@@ -3184,9 +3190,9 @@ if __name__ == "__main__":
         QLineEdit, QDateEdit, QComboBox {
             border: 1px solid #c0c0c0;
             border-radius: 4px;
-            padding: 8px 10px;
+            padding: 5px 10px;
             background-color: #ffffff;
-            font-size: 14px;
+            font-size: 15px;
             min-height: 18px;
             color: #333333;
         }
