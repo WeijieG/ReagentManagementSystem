@@ -1,17 +1,17 @@
 ; -- 基础设置 --
 [Setup]
 AppName=ReagentManagementSystem
-AppVersion=1.0
+AppVersion=2.0
 DefaultDirName={autopf}\ReagentManagementSystem
 OutputDir=.\Output
-OutputBaseFilename=药剂仓库安装(正式开源版)
+OutputBaseFilename=药剂仓库2.0安装器
 SetupIconFile=.\reagent.ico
 Compression=lzma2
 SolidCompression=yes
 ArchitecturesInstallIn64BitMode=x64
 UninstallFilesDir={app}\Uninstall
-VersionInfoVersion=1.0.0.0
-VersionInfoTextVersion=1.0.0
+VersionInfoVersion=2.0.0.0
+VersionInfoTextVersion=2.0.0
 
 [Languages]
 Name: "ChineseSimplified"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"

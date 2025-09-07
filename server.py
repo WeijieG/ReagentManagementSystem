@@ -10,7 +10,7 @@ app = Flask(__name__)
 
 # 配置
 UPDATES_DIR = 'updates'
-CURRENT_VERSION = '1.0.1'
+CURRENT_VERSION = '2.0.1'
 
 # 证书文件路径（将在首次运行时自动生成）
 CERT_FILE = 'self_signed.crt'
