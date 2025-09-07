@@ -459,6 +459,134 @@ class ReagentDatabase:
             print(f"更新失败: {str(e)}")
             return False
 
+# 修改 CheckUpdateThread 类，添加忽略版本号的检查
+class CheckUpdateThread(QThread):
+    update_available = pyqtSignal(dict)  # 传递更新信息
+    no_update = pyqtSignal()
+
+    def __init__(self, ignored_version, parent=None):
+        super().__init__(parent)
+        self.ignored_version = ignored_version
+
+    def run(self):
+        try:
+            config = configparser.ConfigParser()
+            config_path = os.path.join(application_path, 'config.ini')
+            
+            if not os.path.exists(config_path):
+                self.no_update.emit()
+                return
+                
+            config.read(config_path)
+            update_url = config.get('Update', 'Server', fallback='')
+            current_version = config.get('Application', 'Version', fallback='1.0.0')
+
+            if not update_url:
+                self.no_update.emit()
+                return
+
+            # 添加版本号作为查询参数
+            response = requests.get(f"{update_url}/update.json?version={current_version}", timeout=5, verify=False)
+            response.raise_for_status()
+            
+            update_info = response.json()
+            update_version = update_info['version']
+            
+            # 检查是否应该忽略此更新
+            if self.ignored_version and update_version <= self.ignored_version:
+                self.no_update.emit()
+                return
+                
+            if update_version > current_version:
+                self.update_available.emit(update_info)
+            else:
+                self.no_update.emit()
+        except Exception as e:
+            print(f"检查更新失败: {str(e)}")
+            self.no_update.emit()
+
+
+# 修改 UpdatePromptDialog 类，使其能够传递更新版本号
+class UpdatePromptDialog(QDialog):
+    def __init__(self, update_info, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("软件更新")
+        self.setFixedSize(500, 300)
+        self.setWindowFlags(self.windowFlags() & ~Qt.WindowContextHelpButtonHint)
+        
+        self.update_info = update_info
+        self.update_version = update_info['version']
+        
+        layout = QVBoxLayout()
+        
+        # 标题
+        title_label = QLabel("发现新版本")
+        title_label.setFont(QFont("Arial", 14, QFont.Bold))
+        title_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(title_label)
+        
+        # 版本信息
+        version_label = QLabel(f"新版本: {self.update_version}")
+        version_label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(version_label)
+        
+        # 更新日志
+        changelog_label = QLabel("更新内容:")
+        layout.addWidget(changelog_label)
+        
+        self.changelog_text = QTextEdit()
+        self.changelog_text.setReadOnly(True)
+        self.changelog_text.setPlainText(update_info.get('changelog', '无更新日志'))
+        layout.addWidget(self.changelog_text)
+        
+        # 按钮布局
+        button_layout = QHBoxLayout()
+        
+        self.ignore_btn = QPushButton("忽略本次更新")
+        self.ignore_btn.clicked.connect(self.ignore_update)
+        self.ignore_btn.setStyleSheet("""
+            QPushButton {
+                color: #ff4444;
+            }
+        """)
+
+        self.update_btn = QPushButton("前往更新")
+        self.update_btn.clicked.connect(self.accept_update)
+        self.update_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #44aa44;
+                color: white;
+                border: 1px solid #2e8b57;
+                border-radius: 4px;
+                padding: 5px 12px;
+            }
+            QPushButton:hover {
+                background-color: #55bb55;
+                border-color: #3cb371;
+            }
+            QPushButton:pressed {
+                background-color: #2e8b57;
+            }
+        """)
+        
+        self.later_btn = QPushButton("稍后提醒")
+        self.later_btn.clicked.connect(self.reject)
+        
+        button_layout.addWidget(self.ignore_btn)
+        button_layout.addStretch()
+        button_layout.addWidget(self.update_btn)
+        button_layout.addWidget(self.later_btn)
+        
+        layout.addLayout(button_layout)
+        self.setLayout(layout)
+    
+    def accept_update(self):
+        self.accept()
+    
+    def ignore_update(self):
+        # 标记为忽略此版本
+        self.done(2)  # 使用特殊的返回码
+
 class DownloadThread(QThread):
     progress = pyqtSignal(int)
     finished = pyqtSignal(str, bool)
@@ -1019,7 +1147,7 @@ class ReagentNameManager(QDialog):
 
         # 标题
         title_label = QLabel("试剂名称管理")
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label.setFont(QFont("Arial", 14, QFont.Bold))
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
         
@@ -1829,11 +1957,12 @@ class MoreDialog(QDialog):
         layout.setSpacing(10)
 
         # 标题
-        title_label = QLabel("数据库管理")
-        title_label.setFont(QFont("Arial", 12, QFont.Bold))
+        title_label = QLabel("更多功能")
+        title_label.setFont(QFont("Arial", 14, QFont.Bold))
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
-        
+        layout.addStretch()
+
         # 按钮布局
         button_layout = QVBoxLayout()
         button_layout.setSpacing(10)
@@ -2518,12 +2647,75 @@ class ReagentManagementSystem(QMainWindow):
         if not self.check_file_integrity():
             sys.exit(0)
 
+        # 检查更新
+        self.check_for_updates_on_startup()
+
         self.init_ui()
         self.load_data()
         self.setWindowIcon(QIcon(ICON_PATH))
         self.setWindowTitle("试剂库存管理系统")
 
         self.cleanup_old_installer()
+
+    def check_for_updates_on_startup(self):
+        """在启动时检查更新"""
+        # 检查用户是否已忽略某个更新版本
+        userData = configparser.ConfigParser()
+        userData_path = os.path.join(DB_DIR, 'userData.ini')
+        
+        ignored_version = ""
+        if os.path.exists(userData_path):
+            try:
+                userData.read(userData_path)
+                # 检查是否有 Update 部分和 IgnoredVersion 键
+                if userData.has_section('Update') and userData.has_option('Update', 'IgnoredVersion'):
+                    ignored_version = userData.get('Update', 'IgnoredVersion', fallback='')
+            except Exception as e:
+                print(f"读取用户配置时出错: {str(e)}")
+        
+        # 启动更新检查线程，传递忽略的版本号
+        self.update_thread = CheckUpdateThread(ignored_version, self)
+        self.update_thread.update_available.connect(self.show_update_prompt)
+        self.update_thread.no_update.connect(self.update_check_finished)
+        self.update_thread.start()
+
+    # 修改 show_update_prompt 方法，传递更新版本号给 ignore_current_version
+    def show_update_prompt(self, update_info):
+        """显示更新提示对话框"""
+        dialog = UpdatePromptDialog(update_info, self)
+        result = dialog.exec_()
+        
+        if result == QDialog.Accepted:
+            # 用户选择立即更新
+            update_dialog = UpdateDialog(update_info, self)
+            update_dialog.exec_()
+        elif result == 2:  # 忽略此版本
+            # 记录忽略的更新版本号
+            self.ignore_current_version(update_info['version'])
+    
+    def ignore_current_version(self, update_version):
+        """记录用户忽略的更新版本号"""
+        userData = configparser.ConfigParser()
+        userData_path = os.path.join(DB_DIR, 'userData.ini')
+        
+        if os.path.exists(userData_path):
+            userData.read(userData_path)
+        
+        # 确保有 Update 部分
+        if not userData.has_section('Update'):
+            userData.add_section('Update')
+        
+        userData.set('Update', 'IgnoredVersion', update_version)
+        
+        # 确保目录存在
+        os.makedirs(os.path.dirname(userData_path), exist_ok=True)
+        
+        with open(userData_path, 'w') as configfile:
+            userData.write(configfile)
+
+    def update_check_finished(self):
+        """更新检查完成"""
+        pass  # 可以添加一些完成后的处理
 
     def check_file_integrity(self):
         """检查关键文件完整性"""
@@ -2563,7 +2755,6 @@ class ReagentManagementSystem(QMainWindow):
         
         return True
         
-
     def calculate_file_hashes(self):
         """计算关键文件的哈希值"""
         
