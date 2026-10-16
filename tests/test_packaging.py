@@ -145,6 +145,76 @@ class TestSetupScript(unittest.TestCase):
             self.assertIn(name, self.text,
                           f"安装脚本没有检查 {name}")
 
+    def test_no_pre_install_interrogation(self):
+        """安装前不该盘问用户。
+
+        以前 InitializeSetup 会弹「本机缺少 KB2533623…是否继续安装？」——
+        用户既不知道那是什么，也没有别的选择；而且大部分机器根本不缺那个
+        更新，等于白问一次。改成静默装，装完只在该重启时说一句。
+        """
+        self.assertNotIn(
+            "function InitializeSetup", self.text,
+            "又加回安装前的弹窗了？缺的更新应该静默装，不要问用户",
+        )
+        self.assertNotIn(
+            "mbConfirmation", self.text,
+            "setup.iss 里不该出现需要用户回答的选择框",
+        )
+
+    def test_final_notice_tells_user_to_restart(self):
+        """真的需要重启时，结束提示必须说清楚。"""
+        self.assertIn("ShowFinalNotice", self.text,
+                      "安装结束的提示不见了")
+        self.assertIn("请重启电脑后再运行本程序", self.text)
+
+    def test_final_notice_skips_when_environment_already_present(self):
+        """本机本来就有环境 → 跳过安装 → 不该提示重启。
+
+        判断依据必须是安装**前**的基线 `KbWasMissing`，不能是"装完再探测
+        一次"：更新装了但要重启才生效，装完探测到的结果和"本来就没装"
+        一模一样，只看结果分不出这两种情况，会把"跳过安装"也误报成需要重启。
+        """
+        self.assertRegex(
+            self.text,
+            r"(?s)if not KbWasMissing then\s+Exit",
+            "ShowFinalNotice 缺少「本来就有环境 → 静默退出」的分支",
+        )
+        self.assertIn(
+            "ssInstall", self.text,
+            "没有在安装开始前取环境基线，就分不清「本来就有」和「本次装上」",
+        )
+        self.assertRegex(
+            self.text,
+            r"(?s)CurStep = ssInstall then\s+KbWasMissing\s*:=",
+            "基线的取值时机不对 —— 必须早于 [Run]，否则拿到的是装完之后的状态",
+        )
+
+    def test_kb_probe_uses_wide_char_api(self):
+        """探测必须调 LoadLibraryExW，不能是 A 版本。
+
+        Inno Setup 6 的 String 是 Unicode，传给外部函数时按 **PWideChar** 走。
+        调 A 版本的话对方按 ANSI 读，拿到的是乱码路径 —— **不管有没有装 KB
+        都返回 0**，探测彻底失效。实测：
+
+            LoadLibraryExA(无标志):  0            err=126   ← 连不带标志都失败
+            LoadLibraryExW(无标志):  1975189504   err=126
+            LoadLibraryExA(带标志):  0            err=87
+            LoadLibraryExW(带标志):  1975189504   err=87    ← 正常
+
+        用 A 的后果：每次安装都提示重启、每次白跑一遍 wusa，而程序其实好好的。
+
+        只查调用与声明，不查注释 —— setup.iss 里刻意保留了上面那组实测数据
+        作为说明，里面当然会出现 "LoadLibraryExA" 这个词。
+        """
+        self.assertIn("external 'LoadLibraryExW@kernel32.dll", self.text,
+                      "探测函数的声明不见了")
+        self.assertIn(":= LoadLibraryExW(", self.text,
+                      "探测没有调用 W 版本")
+        self.assertNotIn("external 'LoadLibraryExA@kernel32.dll", self.text,
+                         "探测又声明了 A 版本")
+        self.assertNotIn(":= LoadLibraryExA(", self.text,
+                         "探测又调回 A 版本了 —— Inno 的 String 是 UTF-16，必然失败")
+
     def test_includes_version_iss(self):
         self.assertIn('#include "version.iss"', self.text)
 

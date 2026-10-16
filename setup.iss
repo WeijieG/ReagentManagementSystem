@@ -227,23 +227,43 @@ Type: filesandordirs; Name: "{app}"
 
 
 [Code]
-{ --------------------------------------------------------------------------
-  卸载前备份用户数据库。
+var
+  { 安装**开始之前**的环境状态。
 
-  只复制、不删除原库 —— 卸载后重装仍然能看到原有库存。
-  （旧版用的 uninstall_backup.exe 会在备份后删掉原库，那个行为已废弃。）
+    用来区分「本机本来就有」和「本次装上了」这两种情况 —— 它们在安装
+    结束时探测到的结果是一样的（都还探测不到，因为要重启才生效），
+    只靠装完再探测一次分不出来，所以要在装之前先取一次基线。
+
+    这个区分决定了要不要提示用户重启：只有"本次真的装了"才提示。
+    见 CurStepChanged(ssInstall) 和 ShowFinalNotice()。 }
+  KbWasMissing: Boolean;
+
+
+{ --------------------------------------------------------------------------
+  Windows 7 前提检查：LoadLibraryEx 认不认那组搜索标志。
+
+  背景见文件开头 KB2533623 的说明。
+
+  ⚠️ 必须用 **W** 版本，不能用 A。Inno Setup 6 的 String 是 Unicode，传给
+     外部函数时按 **PWideChar** 走；调 A 版本的话对方按 ANSI 读，拿到的是
+     乱码路径，**必然加载失败**。实测数据（同一台机器上四次调用）：
+
+         LoadLibraryExA(无标志):  0            err=126
+         LoadLibraryExW(无标志):  1975189504   err=126
+         LoadLibraryExA(带标志):  0            err=87
+         LoadLibraryExW(带标志):  1975189504   err=87
+
+     A 连"不带标志"都返回 0，说明失败在路径编码，跟标志位无关。
+     用 A 的后果非常隐蔽：探测永远报"缺环境"，于是**每次安装都会提示重启、
+     每次都会白跑一遍 wusa**，而程序其实好好的 —— 用户看到的就是"第二次装
+     还让我重启，可不重启也能打开"。
+
+  判定看**返回值**，不看 GetLastError —— LoadLibraryEx 成功时不清 last error，
+     句柄非零时 err 可能是上一次调用留下的（上面 err=87 就是这种情况）。
   -------------------------------------------------------------------------- }
 
-{ --------------------------------------------------------------------------
-  Windows 7 前提检查：LoadLibraryExW 认不认那组搜索标志。
-
-  背景见文件开头 KB2533623 的说明。这里用 A 版本而不是 W 版本，是因为
-  Pascal Script 的 String 参数按 PAnsiChar 传递；A/W 对 dwFlags 的校验
-  逻辑完全一样，用 A 版本省掉宽字符转换的坑。
-  -------------------------------------------------------------------------- }
-
-function LoadLibraryExA(lpLibFileName: String; hFile: THandle; dwFlags: LongWord): THandle;
-  external 'LoadLibraryExA@kernel32.dll stdcall';
+function LoadLibraryExW(lpLibFileName: String; hFile: THandle; dwFlags: LongWord): THandle;
+  external 'LoadLibraryExW@kernel32.dll stdcall';
 function FreeLibrary(hLibModule: THandle): Boolean;
   external 'FreeLibrary@kernel32.dll stdcall';
 
@@ -256,8 +276,12 @@ var
   H: THandle;
 begin
   { 拿 kernel32.dll 自己当探针：必定存在，必定可加载。
-    缺 KB2533623 时这两个标志位不被识别，调用直接失败返回 0。 }
-  H := LoadLibraryExA(ExpandConstant('{sys}\kernel32.dll'), 0, LIBRARY_SEARCH_FLAGS);
+    缺 KB2533623 时这两个标志位不被识别，调用失败返回 0。
+
+    ⚠️ 这里必须是 W 版本。用 A 版本的话，Inno 传的是 UTF-16 字符串、
+    A 函数按 ANSI 读 —— 路径成了乱码，**不管有没有装 KB 都返回 0**，
+    探测就彻底失效了。原因见上面的说明。 }
+  H := LoadLibraryExW(ExpandConstant('{sys}\kernel32.dll'), 0, LIBRARY_SEARCH_FLAGS);
   Result := H <> 0;
   if Result then
     FreeLibrary(H);
@@ -277,62 +301,11 @@ begin
   Result := (not HasLibrarySearchFlags()) and KbPackageCompiled();
 end;
 
-function InitializeSetup(): Boolean;
-begin
-  Result := True;
+{ 主程序不再自带 MSVC 运行库（原因见 build.spec），四个文件全依赖系统，
+  缺任何一个都起不来。
 
-  if HasLibrarySearchFlags() then
-    Exit;   { 前提满足，正常安装 }
-
-  if KbPackageCompiled() then
-    Result := MsgBox(
-      '本机缺少 Windows 7 的必需更新（KB2533623 或 KB3063858）。' + #13#10 + #13#10 +
-      '没有它，Python 3.8 加载不了任何扩展模块，本程序装上也启动不了。' + #13#10 + #13#10 +
-      '安装程序会自动补上这个更新，但装完必须重启电脑才生效' + #13#10 +
-      '（Windows 换不掉正在使用中的 kernel32.dll）。' + #13#10 + #13#10 +
-      '现在继续安装吗？',
-      mbConfirmation, MB_YESNO) = IDYES
-  else
-    Result := MsgBox(
-      '本机缺少 Windows 7 的必需更新（KB2533623 或 KB3063858）。' + #13#10 + #13#10 +
-      '没有它，Python 3.8 加载不了任何扩展模块，本程序装上也无法启动。' + #13#10 + #13#10 +
-      '这个安装包没有附带该更新，需要你自己补：' + #13#10 +
-      '    1. 让 Windows Update 把系统更新到最新（推荐）' + #13#10 +
-      '    2. 或者单独安装 KB3063858' + #13#10 + #13#10 +
-      '装好并重启之后再运行本程序即可。' + #13#10 + #13#10 +
-      '仍然继续安装吗？',
-      mbConfirmation, MB_YESNO) = IDYES;
-
-  if not Result then
-    MsgBox('已取消安装。', mbInformation, MB_OK);
-end;
-
-procedure WarnIfKbNeedsReboot();
-begin
-  if not KbPackageCompiled() then
-    Exit;
-
-  { 装完还是探测不到 —— 说明更新只是被"暂存"，要重启才会生效。 }
-  if HasLibrarySearchFlags() then
-    Exit;
-
-  { 静默安装（程序内的自动更新走这条路）时不要弹窗卡住流程 }
-  if WizardSilent() then
-    Exit;
-
-  MsgBox('Windows 更新已经装好，但需要重启电脑才能生效。' + #13#10 + #13#10 +
-         '重启之前启动本程序，仍然会报' + #13#10 +
-         '    DLL load failed while importing _ctypes' + #13#10 + #13#10 +
-         '请重启后再运行。',
-         mbInformation, MB_OK);
-end;
-
-{ 主程序不再自带 MSVC 运行库了（原因见 build.spec），四个文件全依赖系统。
-  缺一个都起不来，所以这两个函数要按同一套条件判断。
-
-  ⚠️ 定义顺序有讲究：Pascal Script 要求**先声明后使用**，所以这两个函数
-  必须放在 CurStepChanged / WarnIfRuntimeMissing 之前，否则编译报
-  "Unknown identifier"。 }
+  ⚠️ 定义顺序有讲究：Pascal Script 要求**先声明后使用**。这个函数必须放在
+  ShowFinalNotice 之前，否则编译报 "Unknown identifier"。 }
 
 function SystemRuntimeMissing(): Boolean;
 begin
@@ -341,6 +314,70 @@ begin
          or (not FileExists(ExpandConstant('{sys}\msvcp140.dll')))
          or (not FileExists(ExpandConstant('{sys}\msvcp140_1.dll')));
 end;
+
+
+{ --------------------------------------------------------------------------
+  安装结束时的唯一一处提示。
+
+  设计原则：**不问用户问题，也不讲系统补丁的术语；没做事就不出声。**
+
+  需要补的东西在 [Run] 里已经静默装好了，这里只负责在"本次真的动了系统、
+  且需要重启"时说一声。
+
+  ⚠️ 判断依据是 **KbWasMissing（安装前的基线）**，不是装完再探测一次 ——
+  因为更新装了但要重启才生效，装完探测到的结果和"本来就没装"是一样的，
+  分不出来。只看装完的结果会把「本机本来就有、跳过安装」也误报成需要重启。
+
+  各分支：
+    · 本机本来就有环境      → 什么都没装      → 静默，不提示重启
+    · 本来缺、装上且已生效  → 不需要重启      → 静默
+    · 本来缺、装上但没生效  → 需要重启        → 提示重启
+    · 本来缺、包里没带/装失败 → 走 Windows Update
+    · 运行库缺失            → 硬故障，优先报
+  -------------------------------------------------------------------------- }
+
+procedure ShowFinalNotice();
+begin
+  { 静默安装（程序内的自动更新走这条路）不弹窗，否则会卡住更新流程 }
+  if WizardSilent() then
+    Exit;
+
+  { 一、运行库缺了就是硬故障：主程序不再自带它，结果是双击没反应。
+        无论安装前什么状态都要报出来。 }
+  if SystemRuntimeMissing() then
+  begin
+    MsgBox('安装完成。' + #13#10 + #13#10 +
+           '但 Visual C++ 运行库没能装上，程序暂时无法启动。' + #13#10 + #13#10 +
+           '请把系统更新到最新（Windows Update），然后重启电脑再试。',
+           mbError, MB_OK);
+    Exit;
+  end;
+
+  { 二、本机本来就有这个环境 → 本次跳过了安装，什么都没动 → 不打扰 }
+  if not KbWasMissing then
+    Exit;
+
+  { 三、本来缺、装完却已经生效 → 不需要重启 → 也不用提示 }
+  if HasLibrarySearchFlags() then
+    Exit;
+
+  { 四、本来缺、装完仍缺：本次把它装上了，等重启才生效 }
+  if KbPackageCompiled() then
+    MsgBox('安装完成。' + #13#10 + #13#10 +
+           '请重启电脑后再运行本程序。' + #13#10 + #13#10 +
+           '本次安装补上了 Windows 7 的一个必需系统更新，' +
+           '它需要重启才会生效。' + #13#10 +
+           '（若重启后仍无法运行，请把系统更新到最新。）',
+           mbInformation, MB_OK)
+  else
+    MsgBox('安装完成。' + #13#10 + #13#10 +
+           '但本机缺少 Windows 7 的一个必需系统更新，程序暂时无法启动。' + #13#10 + #13#10 +
+           '请把系统更新到最新（Windows Update），然后重启电脑再试。',
+           mbError, MB_OK);
+end;
+
+{ VCRedistNeeded：系统缺运行库、且包里带了 VC_redist，就去装。
+  主程序不再自带 MSVC 运行库（原因见 build.spec），四个文件全依赖系统。 }
 
 function VCRedistNeeded(): Boolean;
 begin
@@ -354,31 +391,16 @@ begin
             and FileExists(ExpandConstant('{tmp}\VC_redist.x64.exe'));
 end;
 
-procedure WarnIfRuntimeMissing();
-begin
-  if not SystemRuntimeMissing() then
-    Exit;
-  if WizardSilent() then
-    Exit;
-
-  { 走到这里说明 VC_redist 要么没跑要么没装上，而主程序现在不自带运行库，
-    结果会是双击没反应或弹「找不到 MSVCP140.dll」—— 用户完全不知道怎么办。 }
-  MsgBox('Visual C++ 运行库没能装上，本程序无法启动。' + #13#10 + #13#10 +
-         '请手动安装随包的运行库后重试：' + #13#10 +
-         '    Dependencies\VC_redist.x64.exe' + #13#10 + #13#10 +
-         '如果它报错装不上，请在系统里运行 Windows Update 更新到最新。',
-         mbError, MB_OK);
-end;
-
 procedure CurStepChanged(CurStep: TSetupStep);
 begin
-  { ssDone = 全部 [Run] 条目都跑完之后。放在这里而不是 ssPostInstall，
-    是为了不依赖 [Run] 与那个步骤的先后关系。 }
-  if CurStep = ssDone then
-  begin
-    WarnIfKbNeedsReboot();
-    WarnIfRuntimeMissing();
-  end;
+  { ssInstall = 开始复制文件、执行 [Run] **之前**。在这里取环境基线 ——
+    必须早于 [Run]，否则装完了再取就分不清"本来就有"和"本次装上"了。 }
+  if CurStep = ssInstall then
+    KbWasMissing := not HasLibrarySearchFlags()
+  else if CurStep = ssDone then
+    { ssDone = 全部 [Run] 条目都跑完之后。放在这里而不是 ssPostInstall，
+      是为了不依赖 [Run] 与那个步骤的先后关系。 }
+    ShowFinalNotice();
 end;
 
 
