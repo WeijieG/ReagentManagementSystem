@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>试剂库存管理系统</title>
+
+<!-- 样式按层叠顺序加载：令牌 -> 基础 -> 布局 -> 组件。
+     Chromium 83 没有 @layer，层级靠加载顺序表达。 -->
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="css/base.css">
+<link rel="stylesheet" href="css/layout.css">
+<link rel="stylesheet" href="css/components.css">
+</head>
+<body>
+
+<!-- 致命错误面板：平时隐藏，任何未捕获的 JS 异常都会让它显形。
+     没有它的话，前端出错就只表现为白屏，而目标机器上往往没有 DevTools。 -->
+<div id="fatal-panel" class="fatal-panel" style="display:none">
+  <div class="fatal-title">程序遇到问题</div>
+  <div id="fatal-message">发生了未预期的错误。</div>
+  <div id="fatal-detail" class="fatal-detail"></div>
+  <div style="margin-top:16px">
+    <button class="btn" onclick="location.reload()">重新加载界面</button>
+  </div>
+</div>
+
+<div id="app"></div>
+
+<!-- 加载顺序有依赖，不能调换，也不能用 defer/async。
+     file:// 源下不能用 ES modules，因此全部走传统 script 标签。 -->
+<script src="vendor/polyfills.js"></script>
+<script src="vendor/vue.global.prod.js"></script>
+<script src="vendor/qwebchannel.js"></script>
+<script src="js/bridge.js"></script>
+<script src="js/store.js"></script>
+<script src="js/router.js"></script>
+<script src="js/components.js"></script>
+
+<!-- 页面组件：只做注册，彼此无依赖，顺序随意 -->
+<script src="js/screens/dashboard.js"></script>
+<script src="js/screens/inventory.js"></script>
+<script src="js/screens/records.js"></script>
+<script src="js/screens/names.js"></script>
+<script src="js/screens/settings.js"></script>
+<script src="js/screens/inbound.js"></script>
+<script src="js/screens/outbound.js"></script>
+
+<script src="js/app.js"></script>
+
+</body>
+</html>

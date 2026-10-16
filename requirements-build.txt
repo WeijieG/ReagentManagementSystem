@@ -1,0 +1,39 @@
+# 构建与运行依赖 — 全部钉死版本
+#
+# 这份文件的存在理由：Win7 支持窗口极窄，任何一次"顺手升级"都可能
+# 让打包产物在目标机上起不来。改动前请先读每一条后面的原因注释。
+#
+# 目标环境：Windows 7 SP1，Python 3.8.10（最后一个支持 Win7 的 Python）
+
+# ---- GUI 与 Web 渲染 ----
+PyQt5==5.15.4
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.15.0
+
+# ⚠️ 必须同时装这两个，且不能用单体轮子 PyQtWebEngine==5.15.2。
+#    单体轮子把 Qt 库装到 PyQt5/Qt/ ，与 PyQt5-Qt5 的 PyQt5/Qt5/ 形成两套树，
+#    导入时报 "DLL load failed while importing QtWebEngineWidgets"。
+#    本组合会把两者都放进 PyQt5/Qt5/ ，与 PyQt5-Qt5 同树。
+#    内嵌内核为 Chromium 83 —— 最后一个支持 Win7 的 Chromium 是 109，故安全。
+PyQtWebEngine==5.15.4
+# ⚠️ 只有 5.15.2 提供 Windows 轮子（5.15.11+ 仅 macOS/Linux），必须钉死
+PyQtWebEngine-Qt5==5.15.2
+
+# ---- 业务依赖 ----
+openpyxl==3.0.5
+requests==2.32.4
+
+# ---- 打包 ----
+# PyInstaller 4.10 与 pyinstaller-hooks-contrib 2025.5 存在版本代差。
+# 已核实：只有 3 个本项目用不到的 hook 受影响（cryptography / gribapi / pypemicro），
+# 且 QtWebEngine 的 hook 内置于 PyInstaller 本身而非 hooks-contrib。
+# 若打包时报 "cannot import name 'isolated'"，改用下面这组：
+#   pyinstaller==5.13.2
+#   pyinstaller-hooks-contrib==2023.8
+pyinstaller==4.10
+pyinstaller-hooks-contrib==2025.5
+
+# ---- 前端（不入 pip，钉的是随包分发的文件版本）----
+# static/vendor/vue.global.prod.js  =  3.3.13
+# ⚠️ Vue 3.4+ 内部使用 String.prototype.replaceAll(Chrome 85) 与 Array.prototype.at(Chrome 92)，
+#    在 Chromium 83 上会在模块求值阶段抛错，表现为整页白屏。不要升级。

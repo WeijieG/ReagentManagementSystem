@@ -1,0 +1,22 @@
+# 运行/开发依赖 —— 直接跑源码用这份
+#
+# 打包用的依赖另见 requirements-build.txt（多一个 PyInstaller）。
+# 目标环境：Windows 7 SP1，Python 3.8.10（最后一个支持 Win7 的版本）
+
+# ---- GUI 与 Web 渲染 ----
+PyQt5==5.15.4
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.15.0
+
+# ⚠️ 必须同时装这两个，且**不能用单体轮子** PyQtWebEngine==5.15.2。
+#    单体轮子把 Qt 库装到 PyQt5/Qt/ ，与 PyQt5-Qt5 的 PyQt5/Qt5/ 形成两套目录树，
+#    导入时报 "DLL load failed while importing QtWebEngineWidgets"。
+#    下面这个组合会把两者都放进 PyQt5/Qt5/ ，与 PyQt5-Qt5 同树。
+#    内嵌内核 Chromium 83 —— 最后一个支持 Win7 的 Chromium 是 109，故安全。
+PyQtWebEngine==5.15.4
+# ⚠️ 只有 5.15.2 提供 Windows 轮子，必须钉死
+PyQtWebEngine-Qt5==5.15.2
+
+# ---- 业务依赖 ----
+openpyxl==3.0.5
+requests==2.32.4

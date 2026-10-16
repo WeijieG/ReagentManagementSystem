@@ -1,6 +1,7 @@
 # venv\Scripts\activate
 import json
 import os
+import sys
 import hashlib
 from flask import Flask, send_file, request, jsonify
 import ssl  # 导入ssl模块
@@ -10,7 +11,29 @@ app = Flask(__name__)
 
 # 配置
 UPDATES_DIR = 'updates'
-CURRENT_VERSION = '2.0.1'
+CURRENT_VERSION = '2.1.0'
+
+# 更新说明。放在 updates\changelog.txt 里就不用改代码；
+# 没有这个文件时退回到一句通用说明。
+CHANGELOG_FILE = os.path.join(UPDATES_DIR, 'changelog.txt')
+
+
+def load_changelog():
+    try:
+        with open(CHANGELOG_FILE, 'r', encoding='utf-8') as f:
+            text = f.read().strip()
+        if text:
+            return text
+    except OSError:
+        pass
+    return f"版本 {CURRENT_VERSION} 更新内容：\n- 优化性能\n- 修复已知问题"
+
+# 语义化版本比较。**不要**图省事写成 client_version > CURRENT_VERSION ——
+# 那是字符串比较，'2.0.9' > '2.0.10' 为真，会直接回 "Already up to date"，
+# 更新永远推不出去。客户端的 app/core/version.py 已经修过同样的问题。
+# 版本号一改记得同步 config.ini 的 [Application] version。
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from app.core.version import compare_versions  # noqa: E402
 
 # 证书文件路径（将在首次运行时自动生成）
 CERT_FILE = 'self_signed.crt'
@@ -82,9 +105,9 @@ def calculate_md5(file_path):
 def update_info():
     """提供更新信息"""
     client_version = request.args.get('version', '1.0.1')
-    
-    # 检查是否有更新
-    if client_version > CURRENT_VERSION:
+
+    # 检查是否有更新（语义化比较：客户端不低于服务端就没有更新）
+    if compare_versions(client_version, CURRENT_VERSION) >= 0:
         return jsonify({
             "update": False,
             "message": "Already up to date"
@@ -110,7 +133,7 @@ def update_info():
         "version": CURRENT_VERSION,
         "url": f"{request.host_url}download/{latest_setup}",
         "md5": md5,
-        "changelog": "版本 1.0.1 更新内容：\n- 添加自动更新功能\n- 修复已知问题\n- 优化性能",
+        "changelog": load_changelog(),
         "size": os.path.getsize(setup_path)
     })
 

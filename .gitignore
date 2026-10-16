@@ -1,1 +1,23 @@
-Output/药剂仓库安装(正式开源版).exe
+# 探针输出与 Python 缓存
+tools/probe_render.png
+__pycache__/
+*.pyc
+
+# 构建产物（安装包与 onedir 输出）
+/Dist/ReagentManagementSystem/
+/Output/*.exe
+
+# 本地密钥与证书（生产证书不入库）
+private.key
+self_signed.crt
+
+# 构建产物目录
+build/
+tools/ui_smoke*.png
+
+# 开发环境产生的产物（不限定根目录：tests/legacy_reference/ 跑起来也会生成）
+/userData.ini
+ReagentWarehouseData.db
+
+# 虚拟机目录
+Win7VMBox/

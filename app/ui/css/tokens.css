@@ -1,0 +1,174 @@
+/* 设计令牌 — 全部语义化命名，深色主题只覆盖需要变的项。
+ *
+ * 切换方式：document.documentElement.dataset.theme = 'light' | 'dark'
+ * 令牌挂在 :root 上而非 body，保持选择器权重扁平。
+ *
+ * 注意：内核是 Chromium 83，不能用 :is()/:where()/:has()/color-mix()/@layer，
+ * 也不能用 flex 容器的 gap（grid 的 gap 可用）。
+ */
+
+:root {
+  /* ---- 表面 ---- */
+  --bg-app:          #F5F7F9;
+  --bg-surface:      #FFFFFF;
+  --bg-surface-2:    #EDF0F4;
+  --bg-raised:       #FFFFFF;
+  --bg-hover:        #E9EDF2;
+  --bg-active:       #DDE3EA;
+  --bg-scrim:        rgba(16, 22, 30, 0.45);
+
+  /* ---- 文字 ---- */
+  --text-primary:    #171A1F;
+  --text-secondary:  #4B5462;
+  --text-muted:      #7C8695;
+  --text-disabled:   #AEB6C0;
+  --text-inverse:    #FFFFFF;
+  --text-on-accent:  #FFFFFF;
+
+  /* ---- 描边 ---- */
+  --border:          #E1E5EA;
+  --border-subtle:   #EDF0F3;
+  --border-strong:   #C9D0D8;
+  --border-focus:    #2563EB;
+
+  /* ---- 强调色 ---- */
+  --accent:          #2563EB;
+  --accent-hover:    #1D4FD8;
+  --accent-active:   #1A45BC;
+  --accent-subtle:   #EEF4FF;
+  --accent-fg:       #FFFFFF;
+  --accent-ring:     rgba(37, 99, 235, 0.28);
+
+  /* ---- 出入库语义色（对应旧 UI：入库绿 #008000 / 出库红 #C80000）---- */
+  --in-fg:           #15803D;
+  --in-bg:           #E8F6EE;
+  --in-border:       #B7E0C6;
+  --out-fg:          #B91C1C;
+  --out-bg:          #FDECEC;
+  --out-border:      #F3C3C3;
+
+  /* ---- 效期状态色（对应旧 UI 的 4 档阈值）----
+   * 旧实现用的是纯色 #ff0000/#ffa500/#ffd700/#008000。
+   * #ffd700 当文字放在浅底上几乎看不清，这里保留色相用于背景条，
+   * 但文字换成加深后的琥珀色 —— 这是有意的可读性修正，不改业务阈值。
+   */
+  --expiry-expired-fg:  #B91C1C;
+  --expiry-expired-bg:  #FDECEC;
+  --expiry-warn30-fg:   #C2410C;
+  --expiry-warn30-bg:   #FFF1E6;
+  --expiry-warn90-fg:   #8A6D00;
+  --expiry-warn90-bg:   #FFF8E1;
+  --expiry-ok-fg:       #15803D;
+  --expiry-ok-bg:       #E8F6EE;
+
+  /* ---- 通用状态色 ---- */
+  --success:         #15803D;
+  --success-bg:      #E8F6EE;
+  --warning:         #B45309;
+  --warning-bg:      #FEF3E2;
+  --danger:          #DC2626;
+  --danger-bg:       #FDECEC;
+  --info:            #0369A1;
+  --info-bg:         #E7F4FC;
+
+  /* ---- 阴影 ---- */
+  --shadow-1: 0 1px 2px rgba(16, 22, 30, 0.06), 0 1px 3px rgba(16, 22, 30, 0.04);
+  --shadow-2: 0 2px 6px rgba(16, 22, 30, 0.08), 0 4px 12px rgba(16, 22, 30, 0.06);
+  --shadow-modal: 0 12px 32px rgba(16, 22, 30, 0.20), 0 2px 8px rgba(16, 22, 30, 0.10);
+
+  /* ---- 圆角 ---- */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-pill: 999px;
+
+  /* ---- 间距 ---- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+
+  /* ---- 字体 ---- */
+  --font-sans: "Microsoft YaHei", "Segoe UI", "PingFang SC", Arial, sans-serif;
+  --font-mono: Consolas, "Courier New", monospace;
+  --text-xs:   12px;
+  --text-sm:   13px;
+  --text-base: 14px;
+  --text-lg:   16px;
+  --text-xl:   20px;
+  --text-2xl:  26px;
+
+  /* ---- 动效 ---- */
+  --dur-fast: 120ms;
+  --dur-base: 180ms;
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* ---- 布局 ---- */
+  --sidebar-width: 208px;
+  --header-height: 56px;
+}
+
+/* ============================================================
+   深色主题 —— 只覆盖需要变的令牌
+   ============================================================ */
+:root[data-theme="dark"] {
+  --bg-app:          #0E1216;
+  --bg-surface:      #161B22;
+  --bg-surface-2:    #1B222B;
+  --bg-raised:       #1E262F;
+  --bg-hover:        #232C36;
+  --bg-active:       #2B3541;
+  --bg-scrim:        rgba(0, 0, 0, 0.60);
+
+  --text-primary:    #E6EDF3;
+  --text-secondary:  #A3AEBB;
+  --text-muted:      #727E8C;
+  --text-disabled:   #4E5866;
+  --text-inverse:    #0E1216;
+  --text-on-accent:  #FFFFFF;
+
+  --border:          #262F3A;
+  --border-subtle:   #1E262F;
+  --border-strong:   #38424F;
+  --border-focus:    #5B9BFF;
+
+  --accent:          #4C8DFF;
+  --accent-hover:    #6BA0FF;
+  --accent-active:   #3A78E8;
+  --accent-subtle:   #17243A;
+  --accent-fg:       #0E1216;
+  --accent-ring:     rgba(76, 141, 255, 0.35);
+
+  --in-fg:           #4ADE80;
+  --in-bg:           #10261A;
+  --in-border:       #1E4630;
+  --out-fg:          #F87171;
+  --out-bg:          #2A1415;
+  --out-border:      #4C2224;
+
+  --expiry-expired-fg:  #F87171;
+  --expiry-expired-bg:  #2A1415;
+  --expiry-warn30-fg:   #FB923C;
+  --expiry-warn30-bg:   #2C1B0E;
+  --expiry-warn90-fg:   #FACC15;
+  --expiry-warn90-bg:   #292206;
+  --expiry-ok-fg:       #4ADE80;
+  --expiry-ok-bg:       #10261A;
+
+  --success:         #4ADE80;
+  --success-bg:      #10261A;
+  --warning:         #FB923C;
+  --warning-bg:      #2C1B0E;
+  --danger:          #F87171;
+  --danger-bg:       #2A1415;
+  --info:            #60A5FA;
+  --info-bg:         #12233A;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40);
+  --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.45);
+  --shadow-modal: 0 16px 40px rgba(0, 0, 0, 0.60);
+}
