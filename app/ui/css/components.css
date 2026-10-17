@@ -55,26 +55,23 @@
 }
 
 /* 顶栏的出入库动作：按业务语义着色，悬停/按下时填充。
-   图标用伪元素，按钮文本保持“入库/出库”，方便脚本与读屏识别。 */
-.btn-in::before,
-.btn-out::before {
+   图标用内联 SVG（入库=向下入托盘，出库=向上出托盘），
+   描边跟随文字颜色；按钮文本保持“入库/出库”，方便脚本与读屏识别。 */
+.btn-icon {
+  width: 15px;
+  height: 15px;
   margin-right: 6px;
-  font-size: 15px;
-  font-weight: 700;
-  line-height: 1;
-}
-
-.btn-in::before {
-  content: "＋";
-}
-
-.btn-out::before {
-  content: "－";
+  flex-shrink: 0;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 .btn-in,
 .btn-out {
-  min-width: 78px;
+  min-width: 82px;
   font-weight: 600;
 }
 
@@ -636,6 +633,8 @@
   background-color: var(--bg-scrim);
   display: flex;
   justify-content: flex-end;
+  /* 先让遮罩盖住整页，避免面板凭空出现 */
+  animation: scrim-in var(--dur-fast) var(--ease-out) both;
 }
 
 .drawer {
@@ -647,6 +646,18 @@
   background-color: var(--bg-app);
   border-left: 1px solid var(--border);
   box-shadow: var(--shadow-modal);
+  /* 遮罩铺开后再从右侧滑入；backwards 让延迟期间停在屏外 */
+  animation: drawer-in 220ms var(--ease-out) 90ms backwards;
+}
+
+@keyframes scrim-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes drawer-in {
+  from { transform: translateX(100%); }
+  to   { transform: translateX(0); }
 }
 
 /* ============================================================

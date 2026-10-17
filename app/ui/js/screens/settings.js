@@ -32,20 +32,9 @@ window.RMS.screens = window.RMS.screens || {};
       '    <div class="card-body">',
       '      <div class="setting-row">',
       '        <div class="setting-main">',
-      '          <div class="setting-label">主题</div>',
-      '          <div class="setting-desc">深色主题在夜间或光线较暗的实验室里更护眼</div>',
-      '        </div>',
-      '        <div class="segmented">',
-      '          <button v-for="o in themeOptions" :key="o.value"',
-      '                  :class="{ \'is-active\': theme === o.value }"',
-      '                  @click="setTheme(o.value)">{{ o.label }}</button>',
-      '        </div>',
-      '      </div>',
-      '      <div class="setting-row">',
-      '        <div class="setting-main">',
       '          <div class="setting-label">界面风格</div>',
       '          <div class="setting-desc">',
-      '            皮肤可与浅色/深色主题自由组合；顶栏右侧的图标按钮也能快速切换',
+      '            默认、科技、极简、灵动与 iOS 风格都在这里选择，切换后立即生效',
       '          </div>',
       '        </div>',
       '        <select class="input select setting-select" :value="uiStyle"',
@@ -164,11 +153,6 @@ window.RMS.screens = window.RMS.screens || {};
     ].join(''),
     data: function () {
       return {
-        themeOptions: [
-          { value: 'light', label: '浅色' },
-          { value: 'dark', label: '深色' },
-          { value: 'system', label: '跟随系统' },
-        ],
         styles: RMS.styles,
         busy: false,
         checking: false,
@@ -181,7 +165,6 @@ window.RMS.screens = window.RMS.screens || {};
       };
     },
     computed: {
-      theme: function () { return store.theme; },
       uiStyle: function () { return store.style; },
       version: function () { return store.version; },
       dbPath: function () { return store.dbPath; },
@@ -214,7 +197,6 @@ window.RMS.screens = window.RMS.screens || {};
       });
     },
     methods: {
-      setTheme: function (mode) { RMS.setTheme(mode); },
       setStyle: function (style) { RMS.setStyle(style); },
 
       backup: function () {

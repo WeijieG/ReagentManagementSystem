@@ -90,7 +90,6 @@ def build_query_handlers(ctx):
             "version": ctx.version,
             "dbPath": paths.DB_FILE,
             "disclaimerAccepted": integrity.is_disclaimer_accepted(),
-            "theme": integrity.get_theme(),
             "style": integrity.get_ui_style(),
             "pageSizes": [20, 50, 100, 200],
             "maxPageSize": MAX_PAGE_SIZE,

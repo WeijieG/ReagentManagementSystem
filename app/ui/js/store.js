@@ -12,30 +12,26 @@ window.RMS = window.RMS || {};
 
   var bridge = RMS.bridge;
 
-  /* 可用皮肤清单。顺序即顶栏快捷切换的轮换顺序。
-   * 新增皮肤只需要两步：
-   *   1. 在 css 里补一套 [data-style="<id>"] 规则；
+  /* 界面风格清单。明暗色不再单独切换，而是并入风格：
+   * 每一项同时决定皮肤（data-style）与明暗（data-theme）。
+   * 新增风格只需要两步：
+   *   1. 在 css 里补一套 [data-style="<id>"][data-theme="..."] 规则；
    *   2. 往下面加一行（value 用小写字母/数字/连字符）。
-   * 设置页下拉与顶栏按钮都读这份清单，后端不需要跟着改。
+   * 设置页的下拉读这份清单，后端不需要跟着改。
    */
   var STYLES = [
-    { value: 'default', label: '默认', icon: '▦' },
-    { value: 'tech', label: '科技', icon: '◈' },
+    { value: 'light', label: '默认（白）', style: 'default', theme: 'light' },
+    { value: 'dark',  label: '默认（黑）', style: 'default', theme: 'dark' },
+    // 科技只有深色版
+    { value: 'tech',  label: '科技（黑）', style: 'tech',    theme: 'dark' },
+    { value: 'minimal', label: '极简（白）', style: 'minimal', theme: 'light' },
+    { value: 'lively',  label: '灵动（白）', style: 'lively',  theme: 'light' },
+    { value: 'ios',     label: 'iOS（白）',  style: 'ios',     theme: 'light' },
   ];
 
   function findStyle(value) {
     for (var i = 0; i < STYLES.length; i++) {
       if (STYLES[i].value === value) { return STYLES[i]; }
-    }
-    return STYLES[0];
-  }
-
-  function nextStyle(value) {
-    var current = findStyle(value);
-    for (var i = 0; i < STYLES.length; i++) {
-      if (STYLES[i] === current) {
-        return STYLES[(i + 1) % STYLES.length];
-      }
     }
     return STYLES[0];
   }
@@ -47,12 +43,8 @@ window.RMS = window.RMS || {};
     version: '',
     dbPath: '',
 
-    // 主题：light / dark / system
-    theme: 'system',
-    resolvedTheme: 'light',
-
-    // 界面风格：default（默认） / tech（科技），与主题相互独立
-    style: 'default',
+    // 界面风格：light（默认白） / dark（默认黑） / tech（科技黑）
+    style: 'light',
 
     // 免责声明
     disclaimerAccepted: true,
@@ -108,43 +100,19 @@ window.RMS = window.RMS || {};
     nextToastId: 1,
   });
 
-  /* ---------------- 主题 ---------------- */
-
-  function systemPrefersDark() {
-    // matchMedia 在 Chromium 83 可用
-    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-  }
-
-  function applyTheme(mode) {
-    var resolved = mode;
-    if (mode === 'system') {
-      resolved = systemPrefersDark() ? 'dark' : 'light';
-    }
-    store.resolvedTheme = resolved;
-    document.documentElement.setAttribute('data-theme', resolved);
-  }
-
-  function setTheme(mode) {
-    store.theme = mode;
-    applyTheme(mode);
-    // 落盘到 userData.ini。file:// 源下 localStorage 不可用，只能走后端。
-    bridge.call('theme.set', { mode: mode }).catch(function (err) {
-      console.warn('[theme] 保存主题偏好失败:', err.message);
-    });
-  }
-
   /* ---------------- 界面风格 ---------------- */
 
   function applyStyle(style) {
-    // 未知皮肤（例如旧配置里的值）回落到默认，避免界面停在半套样式上
-    var resolved = findStyle(style).value;
-    store.style = resolved;
-    document.documentElement.setAttribute('data-style', resolved);
+    // 未知风格（例如旧配置里的值）回落到白色默认，避免界面停在半套样式上
+    var resolved = findStyle(style);
+    store.style = resolved.value;
+    document.documentElement.setAttribute('data-style', resolved.style);
+    document.documentElement.setAttribute('data-theme', resolved.theme);
   }
 
   function setStyle(style) {
     applyStyle(style);
-    // 与主题一样落盘到 userData.ini
+    // 落盘到 userData.ini。file:// 源下 localStorage 不可用，只能走后端。
     bridge.call('style.set', { style: store.style }).catch(function (err) {
       console.warn('[style] 保存界面风格偏好失败:', err.message);
     });
@@ -178,14 +146,11 @@ window.RMS = window.RMS || {};
       store.version = info.version || '';
       store.dbPath = info.dbPath || '';
       store.disclaimerAccepted = !!info.disclaimerAccepted;
-      store.theme = info.theme || 'system';
-      store.style = info.style || 'default';
       store.dbRepaired = info.dbRepaired || [];
       store.dbIssues = info.dbIssues || [];
       store.networkOk = info.networkOk !== false;
       store.networkError = info.networkError || '';
-      applyTheme(store.theme);
-      applyStyle(store.style);
+      applyStyle(info.style || 'light');
       store.ready = true;
 
       // 网络组件坏掉只影响"检查更新"，不影响库存与出入库 ——
@@ -219,30 +184,13 @@ window.RMS = window.RMS || {};
     if (data && data.text) { toast(data.kind || 'info', data.text); }
   });
 
-  bridge.on('theme.changed', function (data) {
-    if (data && data.mode) { store.theme = data.mode; applyTheme(data.mode); }
-  });
-
   bridge.on('style.changed', function (data) {
     if (data && data.style) { applyStyle(data.style); }
   });
 
-  // 跟随系统主题：仅在用户选「跟随系统」时生效
-  if (window.matchMedia) {
-    var mq = window.matchMedia('(prefers-color-scheme: dark)');
-    var onChange = function () {
-      if (store.theme === 'system') { applyTheme('system'); }
-    };
-    if (mq.addEventListener) { mq.addEventListener('change', onChange); }
-    else if (mq.addListener) { mq.addListener(onChange); }
-  }
-
   RMS.store = store;
   RMS.styles = STYLES;
-  RMS.findStyle = findStyle;
-  RMS.nextStyle = nextStyle;
   RMS.bootstrap = bootstrap;
-  RMS.setTheme = setTheme;
   RMS.setStyle = setStyle;
   RMS.toast = toast;
   RMS.dismissToast = dismissToast;

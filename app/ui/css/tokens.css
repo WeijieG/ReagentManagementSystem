@@ -39,13 +39,13 @@
   --accent-fg:       #FFFFFF;
   --accent-ring:     rgba(37, 99, 235, 0.28);
 
-  /* ---- 出入库语义色（对应旧 UI：入库绿 #008000 / 出库红 #C80000）---- */
-  --in-fg:           #15803D;
-  --in-bg:           #E8F6EE;
-  --in-border:       #B7E0C6;
-  --out-fg:          #B91C1C;
-  --out-bg:          #FDECEC;
-  --out-border:      #F3C3C3;
+  /* ---- 出入库语义色（入库=翡翠绿 / 出库=玫红）---- */
+  --in-fg:           #059669;
+  --in-bg:           #ECFDF5;
+  --in-border:       #A7F3D0;
+  --out-fg:          #E11D48;
+  --out-bg:          #FFF1F2;
+  --out-border:      #FECDD3;
 
   /* ---- 效期状态色（对应旧 UI 的 4 档阈值）----
    * 旧实现用的是纯色 #ff0000/#ffa500/#ffd700/#008000。
@@ -70,6 +70,10 @@
   --danger-bg:       #FDECEC;
   --info:            #0369A1;
   --info-bg:         #E7F4FC;
+
+  /* ---- 浮动提示（收起侧栏的图标名）---- */
+  --tooltip-bg:      #1F2630;
+  --tooltip-fg:      #FFFFFF;
 
   /* ---- 阴影 ---- */
   --shadow-1: 0 1px 2px rgba(16, 22, 30, 0.06), 0 1px 3px rgba(16, 22, 30, 0.04);
@@ -109,6 +113,8 @@
 
   /* ---- 布局 ---- */
   --sidebar-width: 220px;
+  /* 收起后只剩图标轨道 */
+  --sidebar-width-collapsed: 64px;
   --header-height: 56px;
 }
 
@@ -143,12 +149,12 @@
   --accent-fg:       #0E1216;
   --accent-ring:     rgba(76, 141, 255, 0.35);
 
-  --in-fg:           #4ADE80;
-  --in-bg:           #10261A;
-  --in-border:       #1E4630;
-  --out-fg:          #F87171;
-  --out-bg:          #2A1415;
-  --out-border:      #4C2224;
+  --in-fg:           #34D399;
+  --in-bg:           #052E22;
+  --in-border:       #11543C;
+  --out-fg:          #FB7185;
+  --out-bg:          #2C1018;
+  --out-border:      #5C2231;
 
   --expiry-expired-fg:  #F87171;
   --expiry-expired-bg:  #2A1415;
@@ -167,6 +173,9 @@
   --danger-bg:       #2A1415;
   --info:            #60A5FA;
   --info-bg:         #12233A;
+
+  --tooltip-bg:      #2B3541;
+  --tooltip-fg:      #E6EDF3;
 
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.40);
   --shadow-2: 0 4px 12px rgba(0, 0, 0, 0.45);

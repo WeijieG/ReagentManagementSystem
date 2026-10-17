@@ -9,7 +9,7 @@
  *
  * file:// 源的额外限制（设计上要绕开，不是 bug）：
  *   - 不能用 ES modules / fetch（CORS 拦截）→ 全部走 QWebChannel
- *   - 不能用 localStorage → 主题偏好存到 userData.ini，经 theme.set 落盘
+ *   - 不能用 localStorage → 界面风格偏好存到 userData.ini，经 style.set 落盘
  *   - 不能用 Web Worker → 耗时活交给 Python 的 QThread
  */
 window.RMS = window.RMS || {};

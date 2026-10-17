@@ -13,6 +13,11 @@
   height: 100%;
 }
 
+/* 收起后左栏缩成图标轨道 */
+.app-shell.is-collapsed {
+  grid-template-columns: var(--sidebar-width-collapsed) 1fr;
+}
+
 /* ============================================================
    侧边导航
    整个左栏是一块完整的侧边栏；栏内每个导航项是一张独立卡片。
@@ -66,6 +71,34 @@
   letter-spacing: 0.01em;
 }
 
+/* 收起态：提示要飘到右栏上面，放开侧栏与导航列表的裁剪 */
+.app-shell.is-collapsed .sidebar {
+  position: relative;
+  z-index: 20;
+  overflow: visible;
+}
+
+.app-shell.is-collapsed .sidebar-nav {
+  overflow: visible;
+}
+
+/* 收起态：品牌让位，原位置只剩展开按钮 */
+.app-shell.is-collapsed .sidebar-brand {
+  justify-content: center;
+  padding: 0;
+}
+
+.app-shell.is-collapsed .sidebar-brand-mark,
+.app-shell.is-collapsed .sidebar-brand-text,
+.app-shell.is-collapsed .nav-item-label,
+.app-shell.is-collapsed .sidebar-footer {
+  display: none;
+}
+
+.app-shell.is-collapsed .sidebar-toggle {
+  margin-left: 0;
+}
+
 .sidebar-nav {
   flex: 1;
   min-height: 0;
@@ -110,17 +143,63 @@
   font-weight: 600;
 }
 
-.nav-item-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background-color: currentColor;
-  opacity: 0.45;
+/* 图标用内联 SVG，描边跟随文字颜色，激活态自动变强调色 */
+.nav-item-icon {
+  width: 18px;
+  height: 18px;
   flex-shrink: 0;
   margin-right: var(--space-3);
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
-.nav-item.is-active .nav-item-dot {
+.nav-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 收起态：只显示图标，图标居中 */
+.app-shell.is-collapsed .nav-item {
+  position: relative;   /* 悬停提示的定位基准 */
+  justify-content: center;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.app-shell.is-collapsed .nav-item-icon {
+  margin-right: 0;
+}
+
+/* 图标旁的浮出提示。用伪元素挂在按钮上，位置自动跟随，
+   不需要额外的 DOM 或脚本。 */
+.app-shell.is-collapsed .nav-item::after {
+  content: attr(data-label);
+  position: absolute;
+  left: calc(100% + 16px);
+  top: 50%;
+  z-index: 1;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background-color: var(--tooltip-bg);
+  color: var(--tooltip-fg);
+  box-shadow: var(--shadow-2);
+  font-size: var(--text-sm);
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%);
+  transition: opacity var(--dur-fast) var(--ease-out);
+}
+
+.app-shell.is-collapsed .nav-item:hover::after {
   opacity: 1;
 }
 
@@ -152,6 +231,47 @@
   border-top: 1px solid var(--border);
   font-size: var(--text-xs);
   color: var(--text-muted);
+}
+
+/* 收起/展开按钮：跟导航图标同一套视觉，悬停/聚焦时高亮 */
+.sidebar-toggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  /* 撑到品牌行的右端；收起后由 .is-collapsed 撤掉 */
+  margin-left: auto;
+  padding: 0;
+  flex-shrink: 0;
+  border: 1px solid transparent;
+  border-radius: var(--radius-sm);
+  background-color: transparent;
+  color: var(--text-muted);
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+.sidebar-toggle:hover,
+.sidebar-toggle:focus {
+  background-color: var(--bg-hover);
+  border-color: var(--border);
+  color: var(--text-primary);
+}
+
+.sidebar-toggle:active {
+  background-color: var(--bg-active);
+}
+
+.sidebar-toggle-icon {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* ============================================================
@@ -203,7 +323,7 @@
   margin-left: var(--space-2);
 }
 
-/* 入库/出库成对放在左侧，工具按钮用竖线隔开 */
+/* 入库/出库成对靠右 */
 .topbar-actions-main {
   display: flex;
   align-items: center;
@@ -211,14 +331,6 @@
 
 .topbar-actions-main > * + * {
   margin-left: var(--space-2);
-}
-
-.topbar-divider {
-  width: 1px;
-  height: 20px;
-  margin-left: var(--space-3);
-  background-color: var(--border);
-  flex-shrink: 0;
 }
 
 .content {

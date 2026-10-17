@@ -52,16 +52,9 @@ def build_action_handlers(ctx):
     # ------------------------------------------------------------------
     # 应用级
     # ------------------------------------------------------------------
-    def theme_set(payload):
-        mode = (payload.get("mode") or "system").strip()
-        if mode not in ("light", "dark", "system"):
-            raise BridgeError(ErrorCode.VALIDATION, f"不支持的主题模式: {mode}")
-        integrity.set_theme(mode)
-        return {"mode": mode}
-
     def style_set(payload):
-        # 具体皮肤名单由前端的 STYLES 注册表维护，这里只校验标识格式
-        style = (payload.get("style") or "default").strip()
+        # 具体风格名单由前端的 STYLES 注册表维护，这里只校验标识格式
+        style = (payload.get("style") or "light").strip()
         if not integrity.is_valid_ui_style(style):
             raise BridgeError(ErrorCode.VALIDATION, f"不支持的界面风格: {style}")
         integrity.set_ui_style(style)
@@ -184,7 +177,6 @@ def build_action_handlers(ctx):
         return {"name": name, "batch": batch, "quantity": quantity}
 
     return {
-        "theme.set": theme_set,
         "style.set": style_set,
         "disclaimer.accept": disclaimer_accept,
         "app.quit": app_quit,

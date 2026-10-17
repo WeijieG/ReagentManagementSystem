@@ -1,8 +1,8 @@
 /* 科技风格皮肤。
  *
- * 由 <html data-style="tech"> 激活；默认风格（data-style="default"）完全
- * 不命中这里的任何规则。风格与主题（data-theme=light/dark）相互独立：
- * 这里只重定义令牌并追加装饰，颜色全部由下面两套令牌给出。
+ * 由 <html data-style="tech" data-theme="dark"> 激活；默认风格
+ * （data-style="default"）完全不命中这里的任何规则。科技风格只有深色版，
+ * 明暗不再单独切换 —— 白色版已取消。
  *
  * 注意：内核是 Chromium 83，不能用 :is()/:where()/:has()/color-mix()/@layer，
  * 也不能用 flex 容器的 gap（grid 的 gap 可用）。
@@ -11,89 +11,7 @@
  */
 
 /* ============================================================
-   科技风格令牌 —— 浅色
-   ============================================================ */
-:root[data-style="tech"] {
-  /* ---- 表面：偏冷的工业白 ---- */
-  --bg-app:          #EDF3F7;
-  --bg-surface:      #FBFDFE;
-  --bg-surface-2:    #E4EEF5;
-  --bg-raised:       #FFFFFF;
-  --bg-hover:        #E0EEF7;
-  --bg-active:       #D3E5F0;
-  --bg-scrim:        rgba(6, 20, 30, 0.55);
-
-  /* ---- 文字 ---- */
-  --text-primary:    #0A2230;
-  --text-secondary:  #3B5666;
-  --text-muted:      #5F7889;
-  --text-disabled:   #A5B9C6;
-  --text-inverse:    #FFFFFF;
-  --text-on-accent:  #FFFFFF;
-
-  /* ---- 描边 ---- */
-  --border:          #C6DAE6;
-  --border-subtle:   #DCE9F1;
-  --border-strong:   #96B6C8;
-  --border-focus:    #007594;
-
-  /* ---- 强调色：青蓝 ---- */
-  --accent:          #007594;
-  --accent-hover:    #006580;
-  --accent-active:   #00566C;
-  --accent-subtle:   #DFF4FB;
-  --accent-fg:       #FFFFFF;
-  --accent-ring:     rgba(0, 117, 148, 0.28);
-
-  /* ---- 出入库语义色 ---- */
-  --in-fg:           #0B7A55;
-  --in-bg:           #E4F5EE;
-  --in-border:       #ABDEC9;
-  --out-fg:          #B02A2A;
-  --out-bg:          #FBEDED;
-  --out-border:      #EDC0C0;
-
-  /* ---- 效期状态色 ---- */
-  --expiry-expired-fg:  #B02A2A;
-  --expiry-expired-bg:  #FBEDED;
-  --expiry-warn30-fg:   #A65A00;
-  --expiry-warn30-bg:   #FFF2E4;
-  --expiry-warn90-fg:   #7E6900;
-  --expiry-warn90-bg:   #FFF9DF;
-  --expiry-ok-fg:       #0B7A55;
-  --expiry-ok-bg:       #E4F5EE;
-
-  /* ---- 通用状态色 ---- */
-  --success:         #0B7A55;
-  --success-bg:      #E4F5EE;
-  --warning:         #A65A00;
-  --warning-bg:      #FFF2E4;
-  --danger:          #C02B2B;
-  --danger-bg:       #FBEDED;
-  --info:            #007594;
-  --info-bg:         #E1F4FA;
-
-  /* ---- 阴影：带一点冷色 ---- */
-  --shadow-1: 0 1px 2px rgba(6, 34, 48, 0.08);
-  --shadow-2: 0 6px 18px rgba(6, 34, 48, 0.10);
-  --shadow-modal: 0 18px 44px rgba(6, 34, 48, 0.22), 0 2px 8px rgba(6, 34, 48, 0.08);
-
-  /* ---- 棱角化的圆角 ---- */
-  --radius-sm: 3px;
-  --radius-md: 5px;
-  --radius-lg: 8px;
-  --radius-pill: 3px;
-
-  /* ---- 皮肤专用装饰色 ---- */
-  --tech-grid-line:   rgba(0, 117, 148, 0.07);
-  --tech-glow:        rgba(0, 169, 214, 0.16);
-  --tech-glow-strong: rgba(0, 169, 214, 0.32);
-  --tech-hud-line:    rgba(0, 117, 148, 0.40);
-  --tech-header-bg:   linear-gradient(180deg, #EBF6FA 0%, #E2EFF6 100%);
-}
-
-/* ============================================================
-   科技风格令牌 —— 深色（深空 + 霓虹青）
+   科技风格令牌（深空 + 霓虹青）
    ============================================================ */
 :root[data-style="tech"][data-theme="dark"] {
   --bg-app:          #04090F;
@@ -151,6 +69,12 @@
   --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.50);
   --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.55);
   --shadow-modal: 0 20px 48px rgba(0, 0, 0, 0.70), 0 0 24px rgba(34, 211, 238, 0.08);
+
+  /* ---- 棱角化的圆角 ---- */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --radius-pill: 3px;
 
   --tech-grid-line:   rgba(34, 211, 238, 0.055);
   --tech-glow:        rgba(34, 211, 238, 0.16);
@@ -232,12 +156,23 @@
   box-shadow: inset 0 0 0 1px var(--border-subtle);
 }
 
-/* 导航圆点改成斜方块 */
-:root[data-style="tech"] .nav-item-dot {
-  width: 5px;
-  height: 5px;
-  border-radius: 0;
-  transform: rotate(45deg);
+/* 收起态的图标提示：直角描边 + 辉光 */
+:root[data-style="tech"] .app-shell.is-collapsed .nav-item::after {
+  border: 1px solid var(--border-strong);
+  letter-spacing: 0.04em;
+  box-shadow: var(--shadow-2), 0 0 10px var(--tech-glow);
+}
+
+/* 收起按钮沿用 HUD 的描边与辉光 */
+:root[data-style="tech"] .sidebar-toggle {
+  color: var(--text-secondary);
+}
+
+:root[data-style="tech"] .sidebar-toggle:hover,
+:root[data-style="tech"] .sidebar-toggle:focus {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px var(--tech-glow);
 }
 
 :root[data-style="tech"] .sidebar-bottom {

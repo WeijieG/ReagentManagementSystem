@@ -63,21 +63,30 @@ window.RMS = window.RMS || {};
   };
 
   var SidebarNav = {
-    props: { current: String },
+    // collapsed 时只留图标：文字隐藏，改为原生 title 提示
+    props: { current: String, collapsed: Boolean },
     template: [
       '<nav class="sidebar-nav">',
       '  <button v-for="r in mainRoutes" :key="r.key"',
       '          class="nav-item" :class="{ \'is-active\': r.key === current }"',
+      '          :data-label="r.title" :aria-label="collapsed ? r.title : null"',
       '          @click="go(r.key)">',
-      '    <span class="nav-item-dot"></span>{{ r.title }}',
+      '    <svg class="nav-item-icon" viewBox="0 0 24 24" aria-hidden="true">',
+      '      <path :d="r.icon"></path>',
+      '    </svg>',
+      '    <span class="nav-item-label">{{ r.title }}</span>',
       '  </button>',
       '</nav>',
       /* 设置入口固定在底部，不跟随上面的列表滚动 */
       '<div class="sidebar-bottom" v-if="bottomRoutes.length">',
       '  <button v-for="r in bottomRoutes" :key="r.key"',
       '          class="nav-item" :class="{ \'is-active\': r.key === current }"',
+      '          :data-label="r.title" :aria-label="collapsed ? r.title : null"',
       '          @click="go(r.key)">',
-      '    <span class="nav-item-dot"></span>{{ r.title }}',
+      '    <svg class="nav-item-icon" viewBox="0 0 24 24" aria-hidden="true">',
+      '      <path :d="r.icon"></path>',
+      '    </svg>',
+      '    <span class="nav-item-label">{{ r.title }}</span>',
       '  </button>',
       '</div>',
     ].join(''),
@@ -153,13 +162,22 @@ window.RMS = window.RMS || {};
       'outbound-drawer': RMS.components['outbound-drawer'],
     },
     template: [
-      '<div class="app-shell">',
+      '<div class="app-shell" :class="{ \'is-collapsed\': sidebarCollapsed }">',
       '  <aside class="sidebar">',
       '    <div class="sidebar-brand">',
       '      <div class="sidebar-brand-mark"></div>',
       '      <div class="sidebar-brand-text">试剂管理</div>',
+      /* 收起后品牌让位，这个按钮停在原来的位置，图标方向随之翻转 */
+      '      <button class="sidebar-toggle" :title="toggleTitle"',
+      '              @click="sidebarCollapsed = !sidebarCollapsed">',
+      '        <svg class="sidebar-toggle-icon" viewBox="0 0 24 24" aria-hidden="true">',
+      '          <rect x="3" y="3" width="18" height="18" rx="2"></rect>',
+      '          <path :d="toggleIconPath"></path>',
+      '        </svg>',
+      '      </button>',
       '    </div>',
-      '    <sidebar-nav :current="current"></sidebar-nav>',
+      '    <sidebar-nav :current="current"',
+      '                 :collapsed="sidebarCollapsed"></sidebar-nav>',
       '    <div class="sidebar-footer">{{ versionLabel }}</div>',
       '  </aside>',
 
@@ -168,14 +186,23 @@ window.RMS = window.RMS || {};
       '      <div class="topbar-title">{{ title }}</div>',
       '      <div class="topbar-actions">',
       '        <div class="topbar-actions-main">',
-      '          <button class="btn btn-in" @click="inboundOpen = true">入库</button>',
-      '          <button class="btn btn-out" @click="outboundOpen = true">出库</button>',
+      '          <button class="btn btn-in" @click="inboundOpen = true">',
+      '            <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">',
+      '              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>',
+      '              <path d="M7 10l5 5 5-5"></path>',
+      '              <path d="M12 15V3"></path>',
+      '            </svg>',
+      '            入库',
+      '          </button>',
+      '          <button class="btn btn-out" @click="outboundOpen = true">',
+      '            <svg class="btn-icon" viewBox="0 0 24 24" aria-hidden="true">',
+      '              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>',
+      '              <path d="M17 8l-5-5-5 5"></path>',
+      '              <path d="M12 3v12"></path>',
+      '            </svg>',
+      '            出库',
+      '          </button>',
       '        </div>',
-      '        <span class="topbar-divider"></span>',
-      '        <button class="icon-btn" :title="styleTitle" @click="toggleStyle">',
-      '          {{ styleIcon }}</button>',
-      '        <button class="icon-btn" :title="themeTitle" @click="toggleTheme">',
-      '          {{ themeIcon }}</button>',
       '      </div>',
       '    </header>',
       '    <section class="content">',
@@ -195,6 +222,8 @@ window.RMS = window.RMS || {};
         inboundOpen: false,
         outboundOpen: false,
         disclaimerDismissed: false,
+        // 只在本进程内有效：file:// 下 localStorage 不可用，不为这点偏好动后端
+        sidebarCollapsed: false,
       };
     },
     computed: {
@@ -202,25 +231,18 @@ window.RMS = window.RMS || {};
       title: function () { return router.titleOf(router.current.value); },
       screenComponent: function () { return 'screen-' + router.current.value; },
       versionLabel: function () { return store.version ? ('版本 ' + store.version) : ''; },
-      themeIcon: function () { return store.resolvedTheme === 'dark' ? '☽' : '☀'; },
-      themeTitle: function () {
-        return store.resolvedTheme === 'dark' ? '切换到浅色主题' : '切换到深色主题';
+      toggleTitle: function () {
+        return this.sidebarCollapsed ? '展开侧栏' : '收起侧栏';
       },
-      styleIcon: function () { return RMS.findStyle(store.style).icon; },
-      styleTitle: function () {
-        return '切换到' + RMS.nextStyle(store.style).label + '风格';
+      // 方框里一条竖线：线在左表示收起，线在右表示展开
+      toggleIconPath: function () {
+        return this.sidebarCollapsed ? 'M15 3v18' : 'M9 3v18';
       },
       showDisclaimer: function () {
         return store.ready && !store.disclaimerAccepted && !this.disclaimerDismissed;
       },
     },
     methods: {
-      toggleTheme: function () {
-        RMS.setTheme(store.resolvedTheme === 'dark' ? 'light' : 'dark');
-      },
-      toggleStyle: function () {
-        RMS.setStyle(RMS.nextStyle(store.style).value);
-      },
       closeDrawers: function () {
         this.inboundOpen = false;
         this.outboundOpen = false;
