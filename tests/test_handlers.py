@@ -9,14 +9,17 @@
 运行：python -m unittest discover -s tests -v
 """
 
+import datetime
 import os
 import sys
 import tempfile
 import unittest
+from unittest import mock
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from app.bridge import BridgeError, ErrorCode  # noqa: E402
+from app.core import clock  # noqa: E402
 from app.core.db import ReagentDatabase  # noqa: E402
 from app.handlers.actions import build_action_handlers, now_timestamp  # noqa: E402
 from app.handlers.queries import build_query_handlers  # noqa: E402
@@ -332,6 +335,24 @@ class TestQueries(unittest.TestCase):
             "SELECT name FROM sqlite_master WHERE type='table' AND name='reagents'")
         self.assertIsNotNone(self.ctx.db.cursor.fetchone())
 
+    def test_batches_list_can_include_stock(self):
+        """出入库界面的批号下拉：默认返回批号，withStock 时带库存。"""
+        base = {"name": "下拉试剂", "quantity": 1, "operator": "",
+                "productionDate": "2000-01-01", "expiryDate": "2099-01-01"}
+        self.actions["inbound.submit"](dict(base, batch="B2", quantity=7))
+        self.actions["inbound.submit"](dict(base, batch="B1", quantity=3))
+
+        res = self.queries["batches.list"]({"name": "下拉试剂"})
+        self.assertEqual(res["items"], ["B1", "B2"])
+
+        res = self.queries["batches.list"]({"name": "下拉试剂", "withStock": True})
+        self.assertEqual(res["items"], [
+            {"batch": "B1", "quantity": 3},
+            {"batch": "B2", "quantity": 7},
+        ])
+
+        self.assertEqual(self.queries["batches.list"]({"name": ""})["items"], [])
+
     def test_expiry_state_thresholds(self):
         """阈值必须与旧 UI 逐档一致。
 
@@ -445,6 +466,76 @@ class TestTimestampFormat(unittest.TestCase):
         self.assertEqual(ts[10], " ")
         self.assertEqual(ts[19], ":")
         self.assertTrue(ts[20:].isdigit())
+
+
+class TestNetworkClock(unittest.TestCase):
+    """出入库时间戳优先取网络时间，断网回退本机时间。"""
+
+    def tearDown(self):
+        clock.set_network_failure()
+
+    @staticmethod
+    def _parse(ts):
+        return datetime.datetime.strptime(ts[:19], "%Y-%m-%d %H:%M:%S")
+
+    def test_falls_back_to_system_time(self):
+        clock.set_network_failure("offline")
+        before = datetime.datetime.now()
+        parsed = self._parse(now_timestamp())
+        after = datetime.datetime.now()
+        self.assertGreaterEqual(parsed, before.replace(microsecond=0))
+        self.assertLessEqual(parsed, after)
+
+    def test_uses_network_offset(self):
+        real = datetime.datetime.now()
+        system_ms = int(real.timestamp() * 1000)
+        # 模拟本机慢 1 小时
+        clock.set_network_time(system_ms + 3600 * 1000, system_ms, "test")
+        parsed = self._parse(now_timestamp())
+        expected = real + datetime.timedelta(hours=1)
+        self.assertLess(abs((parsed - expected).total_seconds()), 5)
+
+    def test_failure_clears_offset(self):
+        now_ms = int(datetime.datetime.now().timestamp() * 1000)
+        clock.set_network_time(now_ms + 60000, now_ms, "test")
+        self.assertNotEqual(clock.offset_ms(), 0)
+        clock.set_network_failure("offline")
+        self.assertEqual(clock.offset_ms(), 0)
+
+    def test_clock_jump_follows_network_baseline(self):
+        """用户改完系统时间后立即入库，仍应按上次网络时间推进。"""
+        base_system_ms = 1_700_000_000_000
+        with mock.patch.object(clock.time, "monotonic", return_value=1000.0):
+            clock.set_network_time(
+                base_system_ms + 3600 * 1000, base_system_ms, "test")
+
+        # 10 秒后，用户把本机时钟又拨快了 2 小时
+        jumped_system = (base_system_ms + 7200 * 1000) / 1000.0
+        with mock.patch.object(clock.time, "monotonic", return_value=1010.0), \
+                mock.patch.object(clock.time, "time", return_value=jumped_system):
+            got = clock.current_datetime()
+
+        # 应按「网络基准 + 10 秒」得到时间，而不是刚改的本机时间
+        expected_ms = base_system_ms + 3600 * 1000 + 10 * 1000
+        self.assertLess(abs(got.timestamp() * 1000 - expected_ms), 1000)
+
+    def test_inbound_record_uses_network_time(self):
+        ctx = make_ctx()
+        handlers = build_action_handlers(ctx)
+        real = datetime.datetime.now()
+        system_ms = int(real.timestamp() * 1000)
+        clock.set_network_time(system_ms + 3600 * 1000, system_ms, "test")
+
+        handlers["inbound.submit"]({
+            "name": "网络时间试剂", "batch": "B1", "quantity": 3,
+            "operator": "", "productionDate": "2000-01-01",
+            "expiryDate": "2099-01-01",
+        })
+
+        ctx.db.cursor.execute("SELECT date FROM inbound")
+        parsed = self._parse(ctx.db.cursor.fetchone()[0])
+        expected = real + datetime.timedelta(hours=1)
+        self.assertLess(abs((parsed - expected).total_seconds()), 5)
 
 
 if __name__ == "__main__":

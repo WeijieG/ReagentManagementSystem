@@ -48,9 +48,9 @@ window.RMS.screens = window.RMS.screens || {};
 
       '        <div class="field">',
       '          <label class="field-label">批号 <span style="color:var(--danger)">*</span></label>',
-      '          <input class="input" list="bl-out" v-model="form.batch"',
-      '                 placeholder="输入或扫码带出" @change="refreshStock" @input="refreshStock" />',
-      '          <datalist id="bl-out"><option v-for="b in batches" :key="b" :value="b"></option></datalist>',
+      '          <ui-batch-picker v-model="form.batch" :name="form.name" with-stock',
+      '                           placeholder="输入、扫码或下拉选择批号"',
+      '                           @change="refreshStock" />',
       '        </div>',
 
       '        <div class="field">',
@@ -96,7 +96,6 @@ window.RMS.screens = window.RMS.screens || {};
       return {
         names: [],
         nameQuery: '',
-        batches: [],
         stock: null,
         scanText: '',
         scanState: '',
@@ -115,6 +114,10 @@ window.RMS.screens = window.RMS.screens || {};
       stockLabel: function () {
         return this.stock === null ? '—' : String(this.stock);
       },
+    },
+    watch: {
+      // 手动改名（或从左侧列表选名）后，原批号可能不属于新名称，库存要跟着重算
+      'form.name': function () { this.refreshStock(); },
     },
     mounted: function () {
       this.loadNames();
@@ -136,15 +139,7 @@ window.RMS.screens = window.RMS.screens || {};
       },
       pickName: function (n) {
         this.form.name = n;
-        this.loadBatches();
         this.refreshStock();
-      },
-      loadBatches: function () {
-        var self = this;
-        if (!this.form.name) { this.batches = []; return; }
-        bridge.call('batches.list', { name: this.form.name }).then(function (data) {
-          self.batches = data.items;
-        });
       },
 
       refreshStock: function () {
@@ -174,8 +169,9 @@ window.RMS.screens = window.RMS.screens || {};
           self.scanState = 'is-hit';
           self.error = '';
           if (res.gtin) { self.gtin = res.gtin; }
-          if (res.name) { self.form.name = res.name; self.loadBatches(); }
+          if (res.name) { self.form.name = res.name; }
           if (res.batch) { self.form.batch = res.batch; }
+          self.refreshStock();
           self.scanText = '';
           setTimeout(function () { self.scanState = ''; }, 1200);
         }).catch(function (err) {

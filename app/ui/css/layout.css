@@ -103,26 +103,24 @@
   flex: 1;
   min-height: 0;
   overflow-y: auto;
-  /* 顶部与内容区保持同样的 20px，删掉分组标签后两栏首行自然齐平 */
-  padding: var(--space-5) var(--space-3) var(--space-3);
+  padding: var(--space-4) var(--space-3) var(--space-3);
 }
 
-/* 每个导航项一张卡片 */
+/* 导航项：平铺列表，靠底色而不是卡片边框区分 */
 .nav-item {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: 11px var(--space-3);
-  margin-bottom: var(--space-2);
-  border: 1px solid var(--border);
+  height: 38px;
+  padding: 0 var(--space-3);
+  margin-bottom: 2px;
+  border: 0;
   border-radius: var(--radius-sm);
-  background-color: var(--bg-raised);
-  box-shadow: var(--shadow-1);
+  background-color: transparent;
   color: var(--text-secondary);
   font-size: var(--text-base);
   text-align: left;
   transition: background-color var(--dur-fast) var(--ease-out),
-              border-color var(--dur-fast) var(--ease-out),
               color var(--dur-fast) var(--ease-out);
 }
 
@@ -132,13 +130,11 @@
 
 .nav-item:hover {
   background-color: var(--bg-hover);
-  border-color: var(--border-strong);
   color: var(--text-primary);
 }
 
 .nav-item.is-active {
   background-color: var(--accent-subtle);
-  border-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
 }
@@ -278,6 +274,7 @@
    主区域
    ============================================================ */
 .main {
+  position: relative;   /* 「回到顶部」按钮的定位基准 */
   display: flex;
   flex-direction: column;
   min-width: 0;      /* 防止表格把 grid 列撑爆 */
@@ -288,7 +285,7 @@
   display: flex;
   align-items: center;
   height: var(--header-height);
-  padding: 0 var(--space-5);
+  padding: 0 var(--space-6);
   border-bottom: 1px solid var(--border);
   background-color: var(--bg-surface);
   flex-shrink: 0;
@@ -333,10 +330,99 @@
   margin-left: var(--space-2);
 }
 
+/* 常驻系统时钟：不联网时业务日期全靠本机时间，必须让用户一眼看见 */
+.topbar-clock {
+  display: flex;
+  align-items: baseline;
+  margin-left: var(--space-4);
+  padding: 5px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface-2);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 时间来源：网络 = 绿点，本机 = 橙点，校时中 = 灰点 */
+.topbar-clock-source {
+  display: inline-flex;
+  align-items: center;
+  margin-right: 8px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.topbar-clock-source::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  margin-right: 5px;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+
+.topbar-clock-source.is-network { color: var(--success); }
+.topbar-clock-source.is-local   { color: var(--warning); }
+.topbar-clock-source.is-checking { color: var(--text-muted); }
+
+.topbar-clock-week {
+  margin-left: 6px;
+  color: var(--text-muted);
+}
+
+.topbar-clock-time {
+  margin-left: 10px;
+  color: var(--text-primary);
+  font-family: var(--font-mono);
+  font-size: var(--text-base);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+/* 年份明显不合理时整块变成警示色，提示用户去校准系统时间 */
+.topbar-clock.is-suspect {
+  border-color: var(--warning);
+  background-color: var(--warning-bg);
+  color: var(--warning);
+}
+
+.topbar-clock.is-suspect .topbar-clock-week,
+.topbar-clock.is-suspect .topbar-clock-time {
+  color: var(--warning);
+}
+
+/* 校时提示弹窗的正文与技术详情 */
+.time-warn-text {
+  white-space: pre-wrap;
+  line-height: 1.7;
+  font-size: var(--text-sm);
+  color: var(--text-secondary);
+}
+
+.time-warn-detail {
+  margin-top: var(--space-4);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.time-warn-detail .link-btn {
+  font-size: var(--text-xs);
+}
+
+.time-warn-detail > div {
+  margin-top: var(--space-2);
+  line-height: 1.6;
+  word-break: break-all;
+}
+
 .content {
   flex: 1;
   overflow-y: auto;
-  padding: var(--space-5);
+  padding: var(--space-6);
   background-color: var(--bg-app);
 }
 
@@ -344,9 +430,18 @@
   padding: 0;
 }
 
-/* 页面通用容器 */
+/* 页面通用容器：宽屏下居中 */
 .page {
   max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+/* 设置这类窄栏页面：宽屏下整体居中，而不是贴左留一大片空白 */
+.page-narrow {
+  max-width: 880px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .page-toolbar {
@@ -454,10 +549,275 @@
   align-items: center;
 }
 
-.date-input {
-  width: 150px;
+/* 提高一级选择器权重：components.css 在 layout.css 之后加载，
+   单类名会被 .input 的内边距覆盖 */
+.date-range .date-input {
+  /* 日期控件有内部最小宽度，光设 width 会被撑大，这里锁定 flex 基准 */
+  flex: 0 0 124px;
+  width: 124px;
+  min-width: 0;
+  /* 日期文字比普通输入更紧凑，收窄左右内边距才放得下 */
+  padding: 0 8px;
+}
+
+/* 日期框内部只保留日历下拉：去掉清除 × 和上下微调箭头，
+   日期可以直接键入，也可以点下拉在日历里选。 */
+.date-input::-webkit-clear-button,
+.date-input::-webkit-inner-spin-button {
+  display: none;
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.date-input::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+  opacity: 0.55;
+}
+
+.date-input::-webkit-calendar-picker-indicator:hover {
+  opacity: 1;
 }
 
 .date-sep {
   margin: 0 var(--space-2);
+}
+
+/* ============================================================
+   列表页：筛选栏固定在顶部，表格在卡片内部滚动
+   —— 页面本身不滚动，所以筛选栏始终可见；表头 sticky 相对
+      表格自己的滚动容器，滚动时也一直停留在顶部。
+   ============================================================ */
+.page-fill {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.page-fill > .card {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+.page-fill .table-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
+
+/* 空状态在剩余空间里垂直居中 */
+.page-fill .card > .empty {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+/* ============================================================
+   概览：左右两栏卡片 + 顶部小筛选按钮
+   ============================================================ */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.dash-card-header {
+  flex-wrap: wrap;
+}
+
+.dash-card-header .card-title {
+  margin-right: var(--space-3);
+}
+
+.dash-card-header .link-btn {
+  margin-left: auto;
+}
+
+.chip-group {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chip {
+  height: 24px;
+  margin-right: 6px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  background-color: transparent;
+  color: var(--text-secondary);
+  font-size: var(--text-xs);
+  line-height: 1;
+  white-space: nowrap;
+  transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+.chip:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.chip.is-active {
+  background-color: var(--accent-subtle);
+  border-color: var(--accent);
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.link-btn {
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--accent);
+  font-size: var(--text-sm);
+  white-space: nowrap;
+}
+
+.link-btn:hover {
+  text-decoration: underline;
+}
+
+.dash-list {
+  padding: 4px 0;
+}
+
+.dash-item {
+  display: flex;
+  align-items: center;
+  padding: 8px var(--space-6);
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.dash-item:last-child {
+  border-bottom: 0;
+}
+
+.dash-item > .badge {
+  flex-shrink: 0;
+  margin-right: var(--space-3);
+}
+
+.dash-item-main {
+  flex: 1;
+  min-width: 0;
+  margin-right: var(--space-3);
+}
+
+.dash-item-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-sm);
+  color: var(--text-primary);
+}
+
+.dash-item-sub {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+}
+
+.dash-item-time {
+  flex-shrink: 0;
+  margin-right: var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.dash-item-qty {
+  flex-shrink: 0;
+  min-width: 48px;
+  text-align: right;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================================================
+   置顶 / 置底
+   ============================================================ */
+.scroll-controls {
+  position: absolute;
+  /* 抬高一点，避开列表页底部的分页条与右下角的 Toast */
+  right: var(--space-5);
+  bottom: 84px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.scroll-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 38px;
+  height: 38px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 50%;
+  background-color: var(--bg-surface);
+  color: var(--text-secondary);
+  box-shadow: var(--shadow-2);
+  transition: color var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+.scroll-btn + .scroll-btn {
+  margin-top: var(--space-2);
+}
+
+.scroll-btn:hover {
+  color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.scroll-btn svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* 出现与隐藏都走过渡（Vue <transition> 挂的类） */
+.scroll-fade-enter-active,
+.scroll-fade-leave-active {
+  transition: opacity var(--dur-base) var(--ease-out),
+              transform var(--dur-base) var(--ease-out);
+}
+
+.scroll-fade-enter-from,
+.scroll-fade-leave-to {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.scroll-btn-enter-active,
+.scroll-btn-leave-active {
+  transition: opacity var(--dur-fast) var(--ease-out),
+              transform var(--dur-fast) var(--ease-out);
+}
+
+.scroll-btn-enter-from,
+.scroll-btn-leave-to {
+  opacity: 0;
+  transform: scale(0.8);
 }

@@ -199,6 +199,14 @@ class ReagentDatabase:
         self.cursor.execute('SELECT batch FROM reagents WHERE name = ? ORDER BY batch', (name,))
         return [item[0] for item in self.cursor.fetchall()]
 
+    def get_batch_stocks(self, name):
+        """按名称列出批号及当前库存，供出入库界面下拉选择。"""
+        self.cursor.execute(
+            'SELECT batch, quantity FROM reagents WHERE name = ? ORDER BY batch',
+            (name,),
+        )
+        return self.cursor.fetchall()
+
     def get_reagent_details(self, name, batch):
         self.cursor.execute('''
             SELECT id, production_date, expiry_date, quantity
@@ -457,6 +465,19 @@ class ReagentDatabase:
         "productionDate": "production_date",
         "expiryDate": "expiry_date",
         "quantity": "quantity",
+        # 剩余有效期 = 有效期至 - 今天，今天为常量，按 expiry_date 排即可
+        "daysLeft": "julianday(expiry_date)",
+    }
+
+    # 出入库记录 UNION 后的列序：类型=1, id=2, 名称=3, 批号=4,
+    # 日期=5, 数量=6, 操作员=7, 操作后库存=8
+    RECORD_SORT_COLUMNS = {
+        "name": "3",
+        "batch": "4",
+        "date": "5",
+        "quantity": "6",
+        "operator": "7",
+        "remaining": "8",
     }
 
     def list_inventory(self, name_filter="", batch_filter="", expiry_filter="all",
@@ -507,6 +528,10 @@ class ReagentDatabase:
         # 使用 date('now','localtime') 保证按本地日期比较，与 QDate.currentDate() 一致
         if expiry_filter == "expired":
             sql += " AND date(expiry_date) < date('now','localtime')"
+        elif expiry_filter == "attention":
+            # 概览「需关注批次」的口径：已过期 + 30 天内到期
+            sql += (" AND julianday(expiry_date) - julianday(date('now','localtime'))"
+                    " <= 30")
         elif expiry_filter == "soon":
             sql += (" AND date(expiry_date) >= date('now','localtime')"
                     " AND julianday(expiry_date) - julianday(date('now','localtime')) <= 30")
@@ -529,21 +554,22 @@ class ReagentDatabase:
         ''')
         sku_count, total_quantity = self.cursor.fetchone()
 
+        # 同时统计批次数与这些批次的库存总量：概览要同时提示两者
         self.cursor.execute(f'''
-            SELECT COUNT(*)
+            SELECT COUNT(*), COALESCE(SUM(quantity), 0)
             FROM reagents
             WHERE quantity > 0 AND date(expiry_date) < {today}
         ''')
-        expired = self.cursor.fetchone()[0]
+        expired, expired_quantity = self.cursor.fetchone()
 
         self.cursor.execute(f'''
-            SELECT COUNT(*)
+            SELECT COUNT(*), COALESCE(SUM(quantity), 0)
             FROM reagents
             WHERE quantity > 0
               AND date(expiry_date) >= {today}
               AND julianday(expiry_date) - julianday({today}) <= ?
         ''', (attention_days,))
-        expiring_soon = self.cursor.fetchone()[0]
+        expiring_soon, expiring_soon_quantity = self.cursor.fetchone()
 
         self.cursor.execute(f'''
             SELECT name, batch, expiry_date, quantity,
@@ -570,7 +596,9 @@ class ReagentDatabase:
             "skuCount": sku_count,
             "totalQuantity": total_quantity,
             "expiredCount": expired,
+            "expiredQuantity": expired_quantity,
             "expiringSoonCount": expiring_soon,
+            "expiringSoonQuantity": expiring_soon_quantity,
             "attention": [
                 {
                     "name": r[0],
@@ -624,7 +652,8 @@ class ReagentDatabase:
         return total
 
     def list_records(self, record_type, name_filter="", batch_filter="",
-                     start_date=None, end_date=None, page=1, page_size=30):
+                     start_date=None, end_date=None, page=1, page_size=30,
+                     sort_col="date", sort_dir="desc"):
         """分页查询出入库记录。
 
         返回与旧 CombinedRecordPage 相同的行结构：
@@ -670,9 +699,13 @@ class ReagentDatabase:
         total = self.cursor.fetchone()[0]
 
         offset = max(0, (page - 1) * page_size)
-        # 与旧 CombinedRecordPage 一致：仅按日期倒序
+        # 默认仍与旧 CombinedRecordPage 一致按日期倒序；
+        # 次级排序固定，保证同值行在翻页时顺序稳定。
+        column = self.RECORD_SORT_COLUMNS.get(sort_col, "5")
+        direction = "DESC" if str(sort_dir).lower() == "desc" else "ASC"
+        order_by = f"{column} {direction}, 5 DESC, 2 DESC"
         self.cursor.execute(
-            f"SELECT * FROM ({union}) ORDER BY 5 DESC LIMIT ? OFFSET ?",
+            f"SELECT * FROM ({union}) ORDER BY {order_by} LIMIT ? OFFSET ?",
             select_params + [page_size, offset],
         )
         return self.cursor.fetchall(), total

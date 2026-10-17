@@ -156,7 +156,7 @@ def _save_user_data(user_data):
 
 
 def is_disclaimer_accepted():
-    """用户是否已接受免责声明。首次运行会写出一份默认配置。"""
+    """用户是否已接受使用须知。首次运行会写出一份默认配置。"""
     if not os.path.exists(paths.USER_DATA_FILE):
         user_data = configparser.ConfigParser()
         user_data['General'] = {'DisclaimerAccepted': 'False'}
@@ -214,32 +214,89 @@ def set_render_mode(mode):
 # 前端 store.js 的 STYLES 才是皮肤清单，新增皮肤无需改后端。
 UI_STYLE_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
 
+# 风格标识改为语义化命名后的旧值映射。用户在旧版本里选过的皮肤
+# 会在读取时自动落到新标识，不需要重新设置。
+UI_STYLE_ALIASES = {
+    'light': 'bright',
+    'dark': 'night',
+    'lively': 'vivid',
+    # 已移除的旧皮肤统一回落到默认的明亮风格
+    'ios': 'bright',
+    'ios-dark': 'bright',
+    'ios-bright': 'bright',
+    'ios-night': 'bright',
+    'simple-bright': 'bright',
+    'simple-night': 'bright',
+    'minimal': 'bright',
+}
+UI_STYLE_FALLBACK = 'bright'
+
 
 def is_valid_ui_style(style):
     return bool(UI_STYLE_PATTERN.match(style or ""))
 
 
 def get_ui_style():
-    """界面风格偏好：light / dark / tech / minimal / lively / ios 等。
+    """界面风格偏好：bright / night / tech / vivid。
 
     明暗色已并入风格，不再有独立的主题设置。旧版本把两者分开存
-    （General/Theme + General/UIStyle），这里兼容读取一次：只有旧值
-    default（或无效值）才需要按旧主题迁移到黑/白，其余合法标识原样返回。
+    （General/Theme + General/UIStyle），这里兼容读取一次：旧标识先按
+    UI_STYLE_ALIASES 迁移；只有旧值 default（或无效值）才按旧主题落到
+    明亮/暗夜，其余合法标识原样返回。
     """
     user_data = _load_user_data()
-    style = user_data.get('General', 'UIStyle', fallback='light')
+    style = user_data.get('General', 'UIStyle', fallback=UI_STYLE_FALLBACK)
+    style = UI_STYLE_ALIASES.get(style, style)
     if is_valid_ui_style(style) and style != 'default':
         return style
-    # 旧值 default 或无效值：看旧的主题偏好落在黑还是白
+    # 旧值 default 或无效值：看旧的主题偏好落在明亮还是暗夜
     theme = user_data.get('General', 'Theme', fallback='light')
-    return 'dark' if theme == 'dark' else 'light'
+    return 'night' if theme == 'dark' else UI_STYLE_FALLBACK
 
 
 def set_ui_style(style):
+    style = UI_STYLE_ALIASES.get(style, style)
     if not is_valid_ui_style(style):
         raise ValueError(f"不支持的界面风格: {style}")
     user_data = _load_user_data()
     if not user_data.has_section('General'):
         user_data.add_section('General')
     user_data.set('General', 'UIStyle', style)
+    _save_user_data(user_data)
+
+
+# 快捷键只允许单个字母、数字或 F1–F12；空字符串表示未设置。
+# Esc/Shift/Enter 这类功能键以及任何组合键都会被拒绝。
+SHORTCUT_PATTERN = re.compile(r"^(?:[A-Z0-9]|F(?:[1-9]|1[0-2]))$")
+
+
+def is_valid_shortcut(key):
+    return bool(SHORTCUT_PATTERN.match(key or ""))
+
+
+def _read_shortcut(user_data, option, fallback):
+    value = (user_data.get('Shortcuts', option, fallback=fallback) or '').strip().upper()
+    if not value:
+        return ''
+    return value if is_valid_shortcut(value) else fallback
+
+
+def get_shortcuts():
+    """出入库快捷键。未配置过时给出 F2 / F3 作为默认值。"""
+    user_data = _load_user_data()
+    return {
+        "inbound": _read_shortcut(user_data, 'Inbound', 'F2'),
+        "outbound": _read_shortcut(user_data, 'Outbound', 'F3'),
+    }
+
+
+def set_shortcuts(inbound, outbound):
+    for key in (inbound, outbound):
+        if key and not is_valid_shortcut(key):
+            raise ValueError(f"不支持的快捷键: {key}")
+    user_data = _load_user_data()
+    if not user_data.has_section('Shortcuts'):
+        user_data.add_section('Shortcuts')
+    user_data.set('Shortcuts', 'Inbound', inbound or '')
+    user_data.set('Shortcuts', 'Outbound', outbound or '')
     _save_user_data(user_data)

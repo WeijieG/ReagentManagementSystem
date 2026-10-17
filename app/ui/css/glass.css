@@ -1,0 +1,439 @@
+/* 琉璃风格皮肤。
+ *
+ * 由 <html data-style="glass" data-theme="dark"> 激活。
+ * 深空渐变底 + 半透明磨砂面板（毛玻璃）：侧栏、顶栏、卡片、弹窗
+ * 叠在彩色光晕上，用 backdrop-filter 做真实模糊，再用细亮边和
+ * 内高光勾出玻璃的厚度。
+ *
+ * 性能提醒：backdrop-filter 在软件渲染下开销较高。这里只给
+ * 大面积面板使用，模糊半径控制在 10–24px；如果目标机器是软件
+ * 渲染且明显卡顿，可把下面的 blur 值调小或去掉。
+ *
+ * 注意：内核是 Chromium 83，不能用 :is()/:where()/:has()/color-mix()，
+ * 也不能用 flex 容器的 gap（grid 的 gap 可用）。
+ */
+
+:root[data-style="glass"] {
+  /* ---- 表面：全部带透明度，让背景渐变透上来 ---- */
+  --bg-app:          #07101E;
+  --bg-surface:      rgba(255, 255, 255, 0.08);
+  /* 原生 select 弹层不能用半透明底色 */
+  --bg-surface-opaque: #101A2C;
+  --bg-surface-2:    rgba(255, 255, 255, 0.05);
+  --bg-raised:       rgba(18, 28, 46, 0.78);
+  --bg-hover:        rgba(255, 255, 255, 0.11);
+  --bg-active:       rgba(255, 255, 255, 0.17);
+  --bg-scrim:        rgba(3, 8, 18, 0.55);
+  --bg-scrim-soft:   rgba(3, 8, 18, 0.35);
+
+  /* ---- 文字 ---- */
+  --text-primary:    #EAF2FB;
+  --text-secondary:  rgba(234, 242, 251, 0.72);
+  --text-muted:      rgba(234, 242, 251, 0.45);
+  --text-disabled:   rgba(234, 242, 251, 0.25);
+  --text-inverse:    #071018;
+  --text-on-accent:  #04121A;
+
+  /* ---- 描边：半透明白，模拟玻璃边缘 ---- */
+  --border:          rgba(255, 255, 255, 0.14);
+  --border-subtle:   rgba(255, 255, 255, 0.08);
+  --border-strong:   rgba(255, 255, 255, 0.24);
+  --border-focus:    #7DD3FC;
+
+  /* ---- 强调色：冰蓝 ---- */
+  --accent:          #7DD3FC;
+  --accent-hover:    #A5E3FF;
+  --accent-active:   #38BDF8;
+  --accent-subtle:   rgba(125, 211, 252, 0.16);
+  --accent-fg:       #04121A;
+  --accent-ring:     rgba(125, 211, 252, 0.35);
+
+  /* ---- 出入库语义色 ---- */
+  --in-fg:           #6EE7B7;
+  --in-bg:           rgba(110, 231, 183, 0.14);
+  --in-border:       rgba(110, 231, 183, 0.28);
+  --out-fg:          #FDA4AF;
+  --out-bg:          rgba(253, 164, 175, 0.14);
+  --out-border:      rgba(253, 164, 175, 0.28);
+
+  /* ---- 效期状态色 ---- */
+  --expiry-expired-fg:  #FDA4AF;
+  --expiry-expired-bg:  rgba(253, 164, 175, 0.14);
+  --expiry-warn30-fg:   #FCD34D;
+  --expiry-warn30-bg:   rgba(252, 211, 77, 0.14);
+  --expiry-warn90-fg:   #FDE68A;
+  --expiry-warn90-bg:   rgba(253, 230, 138, 0.12);
+  --expiry-ok-fg:       #6EE7B7;
+  --expiry-ok-bg:       rgba(110, 231, 183, 0.14);
+
+  /* ---- 通用状态色 ---- */
+  --success:         #6EE7B7;
+  --success-bg:      rgba(110, 231, 183, 0.14);
+  --warning:         #FCD34D;
+  --warning-bg:      rgba(252, 211, 77, 0.14);
+  --danger:          #FDA4AF;
+  --danger-bg:       rgba(253, 164, 175, 0.14);
+  --info:            #7DD3FC;
+  --info-bg:         rgba(125, 211, 252, 0.14);
+
+  /* ---- 阴影：深色玻璃的厚度 ---- */
+  --shadow-1: 0 3px 10px rgba(0, 0, 0, 0.28);
+  --shadow-2: 0 12px 32px rgba(0, 0, 0, 0.42);
+  --shadow-modal: 0 32px 80px rgba(0, 0, 0, 0.60);
+
+  /* ---- 圆角 ---- */
+  --radius-sm: 12px;
+  --radius-md: 18px;
+  --radius-lg: 24px;
+  --radius-pill: 999px;
+
+  --tooltip-bg: rgba(12, 20, 34, 0.92);
+  --tooltip-fg: #EAF2FB;
+}
+
+/* ============================================================
+   背景：整窗铺彩色光晕，玻璃面板才有东西可"透"
+   ============================================================ */
+:root[data-style="glass"] .app-shell {
+  background-color: #07101E;
+  background-image:
+    radial-gradient(900px 520px at 10% -10%,
+                    rgba(56, 189, 248, 0.30) 0%, rgba(0, 0, 0, 0) 62%),
+    radial-gradient(880px 620px at 92% 8%,
+                    rgba(167, 139, 250, 0.24) 0%, rgba(0, 0, 0, 0) 62%),
+    radial-gradient(820px 620px at 60% 112%,
+                    rgba(45, 212, 191, 0.18) 0%, rgba(0, 0, 0, 0) 60%);
+}
+
+:root[data-style="glass"] .main,
+:root[data-style="glass"] .content {
+  background-color: transparent;
+  background-image: none;
+}
+
+:root[data-style="glass"] .sidebar {
+  background-color: rgba(255, 255, 255, 0.06);
+  border-right: 1px solid var(--border);
+}
+
+:root[data-style="glass"] .topbar {
+  background-color: rgba(7, 16, 30, 0.62);
+  border-bottom: 1px solid var(--border);
+}
+
+/* ============================================================
+   磨砂：只给大面积面板加模糊
+   ============================================================ */
+@supports (backdrop-filter: blur(1px)) {
+  :root[data-style="glass"] .sidebar,
+  :root[data-style="glass"] .topbar {
+    backdrop-filter: blur(18px) saturate(140%);
+  }
+
+  :root[data-style="glass"] .card,
+  :root[data-style="glass"] .stat-card {
+    backdrop-filter: blur(14px) saturate(140%);
+  }
+
+  :root[data-style="glass"] .modal {
+    backdrop-filter: blur(24px) saturate(140%);
+  }
+
+  :root[data-style="glass"] .drawer {
+    backdrop-filter: blur(24px) saturate(140%);
+  }
+
+  :root[data-style="glass"] .combo-menu,
+  :root[data-style="glass"] .toast {
+    backdrop-filter: blur(16px) saturate(140%);
+  }
+}
+
+/* ============================================================
+   侧栏与导航
+   ============================================================ */
+:root[data-style="glass"] .sidebar-brand {
+  border-bottom-color: var(--border-subtle);
+}
+
+:root[data-style="glass"] .sidebar-brand-mark {
+  border-radius: 10px;
+  background-color: var(--accent);
+  background-image: linear-gradient(145deg, #A5E3FF 0%, #7DD3FC 50%, #38BDF8 100%);
+  box-shadow: 0 0 18px rgba(125, 211, 252, 0.45);
+}
+
+:root[data-style="glass"] .nav-item {
+  border-radius: 12px;
+  color: var(--text-secondary);
+}
+
+:root[data-style="glass"] .nav-item:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+:root[data-style="glass"] .nav-item.is-active {
+  background-color: var(--accent-subtle);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: inset 0 0 0 1px rgba(125, 211, 252, 0.30);
+}
+
+:root[data-style="glass"] .sidebar-bottom {
+  border-top-color: var(--border-subtle);
+}
+
+/* 顶栏时钟：一片小玻璃 */
+:root[data-style="glass"] .topbar-clock {
+  border-color: var(--border);
+  background-color: rgba(255, 255, 255, 0.07);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+:root[data-style="glass"] .topbar-clock-time {
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   卡片：半透明玻璃片
+   ============================================================ */
+:root[data-style="glass"] .card,
+:root[data-style="glass"] .stat-card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  background-color: rgba(255, 255, 255, 0.07);
+  background-image: linear-gradient(180deg,
+    rgba(255, 255, 255, 0.10) 0%, rgba(255, 255, 255, 0.04) 100%);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    0 8px 32px rgba(0, 0, 0, 0.28);
+}
+
+:root[data-style="glass"] .card-header {
+  border-bottom-color: var(--border-subtle);
+}
+
+:root[data-style="glass"] .stat-value {
+  font-weight: 700;
+  text-shadow: 0 0 18px rgba(125, 211, 252, 0.20);
+}
+
+/* ============================================================
+   按钮：半透明胶囊，主按钮是冰蓝实体
+   ============================================================ */
+:root[data-style="glass"] .btn {
+  border-color: var(--border);
+  border-radius: var(--radius-pill);
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}
+
+:root[data-style="glass"] .btn:hover:not(:disabled) {
+  border-color: var(--border-strong);
+  background-color: rgba(255, 255, 255, 0.15);
+}
+
+:root[data-style="glass"] .btn-primary {
+  border-color: transparent;
+  background-color: var(--accent);
+  background-image: linear-gradient(180deg, #A5E3FF 0%, #7DD3FC 60%, #38BDF8 100%);
+  color: var(--accent-fg);
+  font-weight: 600;
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.30);
+}
+
+:root[data-style="glass"] .btn-primary:hover:not(:disabled) {
+  border-color: transparent;
+  background-image: linear-gradient(180deg, #C4EEFF 0%, #A5E3FF 60%, #7DD3FC 100%);
+}
+
+:root[data-style="glass"] .btn-primary:active:not(:disabled) {
+  background-image: none;
+  background-color: var(--accent-active);
+}
+
+:root[data-style="glass"] .btn-in:hover:not(:disabled),
+:root[data-style="glass"] .btn-in:active:not(:disabled) {
+  border-color: transparent;
+  background-color: var(--in-fg);
+  color: var(--text-inverse);
+}
+
+:root[data-style="glass"] .btn-out:hover:not(:disabled),
+:root[data-style="glass"] .btn-out:active:not(:disabled) {
+  border-color: transparent;
+  background-color: var(--out-fg);
+  color: var(--text-inverse);
+}
+
+:root[data-style="glass"] .btn-ghost {
+  border-color: transparent;
+  background-color: transparent;
+  box-shadow: none;
+}
+
+:root[data-style="glass"] .icon-btn {
+  border-radius: 50%;
+}
+
+:root[data-style="glass"] .icon-btn:hover {
+  background-color: rgba(255, 255, 255, 0.12);
+  color: var(--accent);
+}
+
+/* ============================================================
+   表单
+   ============================================================ */
+:root[data-style="glass"] .input,
+:root[data-style="glass"] .select {
+  border-color: var(--border);
+  border-radius: 12px;
+  background-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-primary);
+}
+
+:root[data-style="glass"] .input::placeholder {
+  color: var(--text-muted);
+}
+
+:root[data-style="glass"] .input:hover,
+:root[data-style="glass"] .select:hover {
+  border-color: var(--border-strong);
+}
+
+:root[data-style="glass"] .input:focus,
+:root[data-style="glass"] .select:focus {
+  border-color: var(--accent);
+  background-color: rgba(255, 255, 255, 0.12);
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+:root[data-style="glass"] .scan-input::before {
+  border-color: var(--accent);
+  border-top-color: transparent;
+  border-left-color: transparent;
+}
+
+:root[data-style="glass"] .combo-menu {
+  border-color: var(--border-strong);
+  border-radius: 14px;
+  background-color: rgba(12, 22, 38, 0.88);
+  box-shadow: var(--shadow-2);
+}
+
+:root[data-style="glass"] .combo-item:hover,
+:root[data-style="glass"] .combo-item.is-active {
+  background-color: rgba(255, 255, 255, 0.10);
+}
+
+/* ============================================================
+   表格
+   ============================================================ */
+:root[data-style="glass"] .table thead th {
+  background-color: rgba(255, 255, 255, 0.04);
+  border-bottom-color: var(--border-strong);
+  color: var(--text-muted);
+}
+
+:root[data-style="glass"] .table tbody td {
+  border-bottom-color: var(--border-subtle);
+}
+
+:root[data-style="glass"] .table tbody tr:hover td {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+
+:root[data-style="glass"] .table tbody tr.is-selected td {
+  background-color: var(--accent-subtle);
+}
+
+/* ============================================================
+   徽章 / 分段选择器 / 进度 / 开关
+   ============================================================ */
+:root[data-style="glass"] .badge {
+  border-radius: var(--radius-pill);
+}
+
+:root[data-style="glass"] .segmented {
+  border-color: var(--border);
+  border-radius: var(--radius-pill);
+  background-color: rgba(255, 255, 255, 0.05);
+  padding: 2px;
+}
+
+:root[data-style="glass"] .segmented button {
+  border-radius: var(--radius-pill);
+}
+
+:root[data-style="glass"] .segmented button + button {
+  border-left-color: transparent;
+}
+
+:root[data-style="glass"] .segmented button.is-active {
+  background-color: rgba(255, 255, 255, 0.14);
+  color: var(--text-primary);
+  font-weight: 600;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+:root[data-style="glass"] .switch input:checked + .switch-track {
+  background-color: var(--accent);
+}
+
+:root[data-style="glass"] .progress {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+:root[data-style="glass"] .progress-bar {
+  background-color: var(--accent);
+  background-image: linear-gradient(90deg, #38BDF8 0%, #A5E3FF 100%);
+  box-shadow: 0 0 12px rgba(125, 211, 252, 0.45);
+}
+
+/* ============================================================
+   弹窗 / 抽屉 / Toast
+   ============================================================ */
+:root[data-style="glass"] .modal {
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-lg);
+  background-color: rgba(12, 22, 38, 0.90);
+  box-shadow: var(--shadow-modal),
+              inset 0 1px 0 rgba(255, 255, 255, 0.14);
+}
+
+:root[data-style="glass"] .modal-header {
+  border-bottom-color: var(--border-subtle);
+}
+
+:root[data-style="glass"] .modal-footer {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-top-color: var(--border-subtle);
+}
+
+:root[data-style="glass"] .drawer {
+  border-left: 1px solid var(--border-strong);
+  /* 抽屉里是要填写/核对的数据，不能像装饰面板那样透 */
+  background-color: rgba(9, 17, 32, 0.90);
+  box-shadow: var(--shadow-modal);
+}
+
+:root[data-style="glass"] .drawer .modal-header {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+:root[data-style="glass"] .toast {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background-color: rgba(12, 22, 38, 0.88);
+  box-shadow: var(--shadow-2);
+}
+
+:root[data-style="glass"] ::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.22);
+}
+
+:root[data-style="glass"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
+}

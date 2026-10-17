@@ -12,6 +12,7 @@ from .queries import build_query_handlers
 from .actions import build_action_handlers
 from .dataops import build_data_handlers
 from .update import build_update_handlers
+from .timecheck import build_time_handlers
 
 
 class UiHost:
@@ -60,4 +61,5 @@ def build_registry(ctx):
     registry.update(build_action_handlers(ctx))
     registry.update(build_data_handlers(ctx))
     registry.update(build_update_handlers(ctx))
+    registry.update(build_time_handlers(ctx))
     return registry

@@ -9,7 +9,7 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 34px;
+  height: 36px;
   padding: 0 var(--space-4);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -188,7 +188,7 @@
 .input,
 .select {
   width: 100%;
-  height: 34px;
+  height: 36px;
   padding: 0 var(--space-3);
   border: 1px solid var(--border-strong);
   border-radius: var(--radius-sm);
@@ -229,6 +229,180 @@
 .select {
   padding-right: var(--space-2);
   cursor: pointer;
+}
+
+/* 原生下拉弹层。深色主题下弹层默认仍是浅底，
+   如果不显式指定，会被继承的浅色文字变成"白底白字"。 */
+.select option {
+  background-color: var(--bg-surface-opaque, var(--bg-surface));
+  color: var(--text-primary);
+}
+
+/* 批号选择：输入框 + 下拉候选。
+   候选由当前试剂名称实时拉取；扫码枪仍可直接输入任意文本。 */
+.combo {
+  position: relative;
+}
+
+.combo-input {
+  padding-right: 36px;
+}
+
+.combo-toggle {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 34px;
+  cursor: pointer;
+}
+
+.combo-toggle:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-surface-2);
+}
+
+.combo-menu {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  z-index: 10;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 4px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+  box-shadow: var(--shadow-modal);
+}
+
+.combo-item {
+  display: flex;
+  align-items: center;
+  padding: 7px 10px;
+  border-radius: 6px;
+  font-size: var(--text-sm);
+  cursor: pointer;
+}
+
+.combo-item:hover,
+.combo-item.is-active {
+  background-color: var(--bg-surface-2);
+}
+
+.combo-batch {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.combo-stock {
+  margin-left: 12px;
+  font-size: var(--text-xs);
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.combo-empty {
+  padding: 8px 10px;
+  font-size: var(--text-sm);
+  color: var(--text-muted);
+}
+
+/* 卡片里展开下拉时把整张卡片抬高一层。
+   否则在带 backdrop-filter 的皮肤里，卡片会形成独立层叠上下文，
+   下拉面板会被后面的卡片盖住。 */
+.card:focus-within,
+.card.has-open-select {
+  position: relative;
+  z-index: 20;
+}
+
+/* 自定义下拉（ui-select）：外观和批号候选保持一致，
+   不再依赖浏览器绘制的原生下拉弹层。 */
+.select-combo {
+  position: relative;
+  width: 100%;
+}
+
+.select-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  text-align: left;
+}
+
+.select-value {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-caret {
+  margin-left: 8px;
+  flex-shrink: 0;
+  color: var(--text-muted);
+  font-size: 10px;
+  transition: transform var(--dur-fast) var(--ease-out),
+              color var(--dur-fast) var(--ease-out);
+}
+
+.select-trigger.is-open .select-caret {
+  color: var(--accent);
+  transform: rotate(180deg);
+}
+
+.select-menu.is-dropup {
+  top: auto;
+  bottom: calc(100% + 4px);
+}
+
+.select-item {
+  justify-content: space-between;
+}
+
+.select-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-item.is-selected {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+.select-check {
+  margin-left: 8px;
+  flex-shrink: 0;
+  color: var(--accent);
+  font-size: 12px;
+}
+
+/* 分页里的「每页 N 条」比普通输入框矮一档 */
+.pager-size .select-trigger {
+  height: 28px;
+  padding: 0 9px;
+  font-size: var(--text-sm);
+}
+
+/* 风格下拉有 8 项，放宽高度，尽量一屏看完 */
+.setting-select .select-menu {
+  max-height: 320px;
 }
 
 /* 扫码输入框：视觉上要一眼可辨，因为它是主工作流入口 */
@@ -282,7 +456,7 @@
 .card-header {
   display: flex;
   align-items: center;
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-4) var(--space-6);
   border-bottom: 1px solid var(--border);
 }
 
@@ -292,7 +466,7 @@
 }
 
 .card-body {
-  padding: var(--space-5);
+  padding: var(--space-6);
 }
 
 .card-body-flush {
@@ -308,7 +482,7 @@
 }
 
 .stat-card {
-  padding: var(--space-4) var(--space-5);
+  padding: var(--space-5) var(--space-6);
   background-color: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-md);
@@ -328,6 +502,11 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* 风险类指标（临期/过期数量）用更大的字号强化警示 */
+.stat-value-lg {
+  font-size: 32px;
+}
+
 .stat-value.is-danger  { color: var(--danger); }
 .stat-value.is-warning { color: var(--warning); }
 .stat-value.is-accent  { color: var(--accent); }
@@ -336,6 +515,13 @@
   margin-top: var(--space-2);
   font-size: var(--text-xs);
   color: var(--text-muted);
+}
+
+/* 说明行里的批次数：比正文大一档并标红，和上面的风险数字呼应 */
+.stat-foot-num {
+  font-size: var(--text-base);
+  font-weight: 600;
+  color: var(--danger);
 }
 
 /* ============================================================
@@ -489,6 +675,7 @@
 .pager {
   display: flex;
   align-items: center;
+  flex-shrink: 0;      /* 列表页里表格滚动时，分页条始终留在卡片底部 */
   padding: var(--space-3) var(--space-4);
   border-top: 1px solid var(--border);
   background-color: var(--bg-surface);
@@ -630,7 +817,8 @@
   bottom: 0;
   left: 0;
   z-index: 1000;
-  background-color: var(--bg-scrim);
+  /* 轻遮罩：只把页面压暗 10%，面板本身才是视觉重点 */
+  background-color: var(--bg-scrim-soft);
   display: flex;
   justify-content: flex-end;
   /* 先让遮罩盖住整页，避免面板凭空出现 */
@@ -658,6 +846,24 @@
 @keyframes drawer-in {
   from { transform: translateX(100%); }
   to   { transform: translateX(0); }
+}
+
+/* 离场：与入场对称 —— 面板滑回右侧，遮罩同步淡出。
+   Vue 的 <transition name="drawer"> 会给根节点挂上这些类。 */
+.drawer-leave-active {
+  transition: background-color 200ms var(--ease-out);
+}
+
+.drawer-leave-to {
+  background-color: transparent;
+}
+
+.drawer-leave-active .drawer {
+  transition: transform 200ms var(--ease-out);
+}
+
+.drawer-leave-to .drawer {
+  transform: translateX(100%);
 }
 
 /* ============================================================
@@ -828,6 +1034,15 @@
 .setting-select {
   width: 150px;
   flex-shrink: 0;
+}
+
+/* 快捷键录入框：点击后直接按键，居中显示键名 */
+.shortcut-input {
+  width: 120px;
+  flex-shrink: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  cursor: pointer;
 }
 
 /* 主题分段选择器 */

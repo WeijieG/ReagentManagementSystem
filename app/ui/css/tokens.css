@@ -8,6 +8,9 @@
  */
 
 :root {
+  /* 原生控件（含 select 弹层）按浅色渲染 */
+  color-scheme: light;
+
   /* ---- 表面 ---- */
   --bg-app:          #F5F7F9;
   --bg-surface:      #FFFFFF;
@@ -16,6 +19,8 @@
   --bg-hover:        #E9EDF2;
   --bg-active:       #DDE3EA;
   --bg-scrim:        rgba(16, 22, 30, 0.45);
+  /* 出入库抽屉用的轻遮罩，只压暗 10% */
+  --bg-scrim-soft:   rgba(16, 22, 30, 0.10);
 
   /* ---- 文字 ---- */
   --text-primary:    #171A1F;
@@ -81,9 +86,9 @@
   --shadow-modal: 0 12px 32px rgba(16, 22, 30, 0.20), 0 2px 8px rgba(16, 22, 30, 0.10);
 
   /* ---- 圆角 ---- */
-  --radius-sm: 6px;
-  --radius-md: 10px;
-  --radius-lg: 14px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
   --radius-pill: 999px;
 
   /* ---- 间距 ---- */
@@ -112,16 +117,19 @@
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 
   /* ---- 布局 ---- */
-  --sidebar-width: 220px;
+  --sidebar-width: 232px;
   /* 收起后只剩图标轨道 */
   --sidebar-width-collapsed: 64px;
-  --header-height: 56px;
+  --header-height: 60px;
 }
 
 /* ============================================================
    深色主题 —— 只覆盖需要变的令牌
    ============================================================ */
 :root[data-theme="dark"] {
+  /* 让 Chromium 用深色方案绘制原生控件与 select 弹层 */
+  color-scheme: dark;
+
   --bg-app:          #0E1216;
   --bg-surface:      #161B22;
   --bg-surface-2:    #1B222B;
@@ -129,6 +137,7 @@
   --bg-hover:        #232C36;
   --bg-active:       #2B3541;
   --bg-scrim:        rgba(0, 0, 0, 0.60);
+  --bg-scrim-soft:   rgba(0, 0, 0, 0.10);
 
   --text-primary:    #E6EDF3;
   --text-secondary:  #A3AEBB;

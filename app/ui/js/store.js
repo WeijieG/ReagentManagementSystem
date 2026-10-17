@@ -20,13 +20,15 @@ window.RMS = window.RMS || {};
    * 设置页的下拉读这份清单，后端不需要跟着改。
    */
   var STYLES = [
-    { value: 'light', label: '默认（白）', style: 'default', theme: 'light' },
-    { value: 'dark',  label: '默认（黑）', style: 'default', theme: 'dark' },
+    { value: 'bright', label: '明亮', style: 'bright', theme: 'light' },
+    { value: 'night',  label: '暗夜', style: 'night',  theme: 'dark' },
     // 科技只有深色版
-    { value: 'tech',  label: '科技（黑）', style: 'tech',    theme: 'dark' },
-    { value: 'minimal', label: '极简（白）', style: 'minimal', theme: 'light' },
-    { value: 'lively',  label: '灵动（白）', style: 'lively',  theme: 'light' },
-    { value: 'ios',     label: 'iOS（白）',  style: 'ios',     theme: 'light' },
+    { value: 'tech',   label: '科技', style: 'tech',   theme: 'dark' },
+    { value: 'vivid',  label: '灵动', style: 'vivid',  theme: 'light' },
+    { value: 'soft',   label: '柔光', style: 'soft',   theme: 'light' },
+    { value: 'depth',  label: '浮影', style: 'depth',  theme: 'light' },
+    { value: 'glass',  label: '琉璃', style: 'glass',  theme: 'dark' },
+    { value: 'paper',  label: '纸墨', style: 'paper',  theme: 'light' },
   ];
 
   function findStyle(value) {
@@ -43,8 +45,11 @@ window.RMS = window.RMS || {};
     version: '',
     dbPath: '',
 
-    // 界面风格：light（默认白） / dark（默认黑） / tech（科技黑）
-    style: 'light',
+    // 界面风格：bright（明亮） / night（暗夜） / tech（科技）等
+    style: 'bright',
+
+    // 出入库快捷键（单个字母/数字/F1–F12，空串表示未设置）
+    shortcuts: { inbound: 'F2', outbound: 'F3' },
 
     // 免责声明
     disclaimerAccepted: true,
@@ -96,6 +101,9 @@ window.RMS = window.RMS || {};
     // 后端推送的失效信号：数据库有变动时自增，各页 watch 它重新取数
     dirty: 0,
 
+    // 概览卡片跳转到列表页时携带的一次性筛选条件（用后由目标页清空）
+    pending: { inventory: null, records: null },
+
     toasts: [],
     nextToastId: 1,
   });
@@ -115,6 +123,31 @@ window.RMS = window.RMS || {};
     // 落盘到 userData.ini。file:// 源下 localStorage 不可用，只能走后端。
     bridge.call('style.set', { style: store.style }).catch(function (err) {
       console.warn('[style] 保存界面风格偏好失败:', err.message);
+    });
+  }
+
+  /* ---------------- 快捷键 ---------------- */
+
+  /* 把按键事件转成存盘用的名称；只接受字母、数字、F1–F12，
+     任何修饰键组合（含单独按下的 Shift/Esc/Enter）都返回空串。 */
+  function shortcutFromEvent(e) {
+    if (!e || e.ctrlKey || e.altKey || e.metaKey) { return ''; }
+    var key = e.key || '';
+    if (/^[a-zA-Z]$/.test(key)) { return key.toUpperCase(); }
+    if (/^[0-9]$/.test(key)) { return key; }
+    var f = key.match(/^F([1-9]|1[0-2])$/i);
+    return f ? ('F' + f[1]) : '';
+  }
+
+  function setShortcut(which, key) {
+    var previous = store.shortcuts[which];
+    store.shortcuts[which] = key || '';
+    bridge.call('shortcuts.set', {
+      inbound: store.shortcuts.inbound,
+      outbound: store.shortcuts.outbound,
+    }).catch(function (err) {
+      store.shortcuts[which] = previous;
+      RMS.toast('error', '保存快捷键失败：' + err.message);
     });
   }
 
@@ -146,6 +179,10 @@ window.RMS = window.RMS || {};
       store.version = info.version || '';
       store.dbPath = info.dbPath || '';
       store.disclaimerAccepted = !!info.disclaimerAccepted;
+      if (info.shortcuts) {
+        store.shortcuts.inbound = info.shortcuts.inbound || '';
+        store.shortcuts.outbound = info.shortcuts.outbound || '';
+      }
       store.dbRepaired = info.dbRepaired || [];
       store.dbIssues = info.dbIssues || [];
       store.networkOk = info.networkOk !== false;
@@ -192,6 +229,8 @@ window.RMS = window.RMS || {};
   RMS.styles = STYLES;
   RMS.bootstrap = bootstrap;
   RMS.setStyle = setStyle;
+  RMS.setShortcut = setShortcut;
+  RMS.shortcutFromEvent = shortcutFromEvent;
   RMS.toast = toast;
   RMS.dismissToast = dismissToast;
 }(window.RMS));

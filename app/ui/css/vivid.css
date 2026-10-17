@@ -1,44 +1,44 @@
 /* 灵动风格皮肤。
  *
- * 由 <html data-style="lively" data-theme="light"> 激活。
- * 特征：薰衣草紫强调色、大圆角、胶囊按钮、柔和的彩色阴影，
+ * 由 <html data-style="vivid" data-theme="light"> 激活。
+ * 特征：清澈的蓝色强调色、大圆角、胶囊按钮、柔和的彩色阴影，
  * 以及悬停时的轻微位移 —— 让静态的表格界面有一点呼吸感。
  *
  * 注意：内核是 Chromium 83，不能用 :is()/:where()/:has()，
  * 也不能用 flex 容器的 gap（grid 的 gap 可用）。
  */
 
-:root[data-style="lively"] {
-  /* ---- 表面：带一点紫调 ---- */
-  --bg-app:          #F6F5FF;
+:root[data-style="vivid"] {
+  /* ---- 表面：带一点蓝调 ---- */
+  --bg-app:          #F4F8FF;
   --bg-surface:      #FFFFFF;
-  --bg-surface-2:    #F0EDFF;
+  --bg-surface-2:    #EDF4FF;
   --bg-raised:       #FFFFFF;
-  --bg-hover:        #ECE8FF;
-  --bg-active:       #E2DCFF;
-  --bg-scrim:        rgba(35, 28, 74, 0.38);
+  --bg-hover:        #E6F0FF;
+  --bg-active:       #D8E8FF;
+  --bg-scrim:        rgba(20, 38, 74, 0.38);
 
   /* ---- 文字 ---- */
-  --text-primary:    #1C1936;
-  --text-secondary:  #565078;
-  --text-muted:      #8A85A6;
-  --text-disabled:   #B9B4CE;
+  --text-primary:    #14233D;
+  --text-secondary:  #4A5D7E;
+  --text-muted:      #7D8FAC;
+  --text-disabled:   #B3C0D4;
   --text-inverse:    #FFFFFF;
   --text-on-accent:  #FFFFFF;
 
   /* ---- 描边 ---- */
-  --border:          #E5E1F6;
-  --border-subtle:   #F0EDFB;
-  --border-strong:   #CFC8EE;
-  --border-focus:    #6C5CE7;
+  --border:          #DCE8F8;
+  --border-subtle:   #EBF2FC;
+  --border-strong:   #C3D6EE;
+  --border-focus:    #3B82F6;
 
-  /* ---- 强调色：薰衣草紫 ---- */
-  --accent:          #6C5CE7;
-  --accent-hover:    #5A49D6;
-  --accent-active:   #4B3BC4;
-  --accent-subtle:   #F1EEFF;
+  /* ---- 强调色：清澈的蓝 ---- */
+  --accent:          #2563EB;
+  --accent-hover:    #1D4ED8;
+  --accent-active:   #1A45BC;
+  --accent-subtle:   #EAF2FF;
   --accent-fg:       #FFFFFF;
-  --accent-ring:     rgba(108, 92, 231, 0.26);
+  --accent-ring:     rgba(37, 99, 235, 0.26);
 
   /* ---- 出入库语义色 ---- */
   --in-fg:           #0E9367;
@@ -68,10 +68,10 @@
   --info:            #3B7CE0;
   --info-bg:         #EEF4FE;
 
-  /* ---- 阴影：带紫调、更柔更大 ---- */
-  --shadow-1: 0 2px 10px rgba(76, 61, 196, 0.07);
-  --shadow-2: 0 10px 30px rgba(76, 61, 196, 0.14);
-  --shadow-modal: 0 26px 64px rgba(40, 28, 110, 0.26);
+  /* ---- 阴影：带蓝调、更柔更大 ---- */
+  --shadow-1: 0 2px 10px rgba(37, 99, 235, 0.07);
+  --shadow-2: 0 10px 30px rgba(37, 99, 235, 0.14);
+  --shadow-modal: 0 26px 64px rgba(18, 44, 105, 0.26);
 
   /* ---- 圆角：更圆润 ---- */
   --radius-sm: 10px;
@@ -79,7 +79,7 @@
   --radius-lg: 20px;
   --radius-pill: 999px;
 
-  --tooltip-bg: #2A2350;
+  --tooltip-bg: #1E3A5F;
   --tooltip-fg: #FFFFFF;
 }
 
@@ -88,21 +88,21 @@
    ============================================================ */
 
 /* 内容区两个角落的柔光，给大片留白一点颜色 */
-:root[data-style="lively"] .content {
+:root[data-style="vivid"] .content {
   background-image:
-    radial-gradient(circle at 100% 0%, rgba(155, 140, 255, 0.16), rgba(0, 0, 0, 0) 42%),
-    radial-gradient(circle at 0% 100%, rgba(255, 159, 205, 0.10), rgba(0, 0, 0, 0) 36%);
+    radial-gradient(circle at 100% 0%, rgba(96, 165, 250, 0.18), rgba(0, 0, 0, 0) 42%),
+    radial-gradient(circle at 0% 100%, rgba(125, 211, 252, 0.12), rgba(0, 0, 0, 0) 36%);
   background-attachment: local;
 }
 
 /* 品牌标记用渐变 */
-:root[data-style="lively"] .sidebar-brand-mark {
-  background-image: linear-gradient(135deg, var(--accent) 0%, #9B8CFF 100%);
-  box-shadow: 0 4px 12px rgba(108, 92, 231, 0.30);
+:root[data-style="vivid"] .sidebar-brand-mark {
+  background-image: linear-gradient(135deg, var(--accent) 0%, #7DB4FF 100%);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.30);
 }
 
-/* 导航项：胶囊形白卡，悬停轻轻侧移，激活时换成紫色渐变 */
-:root[data-style="lively"] .nav-item {
+/* 导航项：胶囊形白卡，悬停轻轻侧移，激活时换成蓝色渐变 */
+:root[data-style="vivid"] .nav-item {
   border-radius: var(--radius-pill);
   border-color: transparent;
   background-color: var(--bg-surface);
@@ -114,30 +114,30 @@
               box-shadow var(--dur-fast) var(--ease-out);
 }
 
-:root[data-style="lively"] .nav-item:hover {
+:root[data-style="vivid"] .nav-item:hover {
   border-color: transparent;
   transform: translateX(2px);
   box-shadow: var(--shadow-2);
 }
 
-:root[data-style="lively"] .nav-item.is-active {
+:root[data-style="vivid"] .nav-item.is-active {
   border-color: transparent;
   background-color: var(--accent);
-  background-image: linear-gradient(135deg, var(--accent) 0%, #9B8CFF 100%);
+  background-image: linear-gradient(135deg, var(--accent) 0%, #60A5FA 100%);
   color: #FFFFFF;
-  box-shadow: 0 6px 16px rgba(108, 92, 231, 0.30);
+  box-shadow: 0 6px 16px rgba(59, 130, 246, 0.30);
 }
 
-:root[data-style="lively"] .nav-item-icon {
+:root[data-style="vivid"] .nav-item-icon {
   transition: transform var(--dur-base) var(--ease-out);
 }
 
-:root[data-style="lively"] .nav-item:hover .nav-item-icon {
+:root[data-style="vivid"] .nav-item:hover .nav-item-icon {
   transform: scale(1.08);
 }
 
 /* 按钮：胶囊形；主按钮走渐变并带彩色投影 */
-:root[data-style="lively"] .btn {
+:root[data-style="vivid"] .btn {
   border-radius: var(--radius-pill);
   transition: transform var(--dur-fast) var(--ease-out),
               background-color var(--dur-fast) var(--ease-out),
@@ -146,59 +146,64 @@
               box-shadow var(--dur-fast) var(--ease-out);
 }
 
-:root[data-style="lively"] .btn:hover:not(:disabled) {
+:root[data-style="vivid"] .btn:hover:not(:disabled) {
   transform: translateY(-1px);
 }
 
-:root[data-style="lively"] .btn:active:not(:disabled) {
+:root[data-style="vivid"] .btn:active:not(:disabled) {
   transform: translateY(0);
 }
 
-:root[data-style="lively"] .btn-primary {
+:root[data-style="vivid"] .btn-primary {
   border-color: transparent;
-  background-image: linear-gradient(135deg, var(--accent) 0%, #9B8CFF 100%);
-  box-shadow: 0 4px 14px rgba(108, 92, 231, 0.28);
+  background-image: linear-gradient(135deg, var(--accent) 0%, #60A5FA 100%);
+  box-shadow: 0 4px 14px rgba(59, 130, 246, 0.28);
 }
 
-:root[data-style="lively"] .btn-primary:hover:not(:disabled) {
+:root[data-style="vivid"] .btn-primary:hover:not(:disabled) {
   border-color: transparent;
-  background-image: linear-gradient(135deg, var(--accent-hover) 0%, #8F7EFF 100%);
+  background-image: linear-gradient(135deg, var(--accent-hover) 0%, #3B82F6 100%);
 }
 
-:root[data-style="lively"] .icon-btn {
+:root[data-style="vivid"] .icon-btn {
   border-radius: 50%;
 }
 
 /* 统计卡：悬停上浮 */
-:root[data-style="lively"] .stat-card {
+:root[data-style="vivid"] .stat-card {
   transition: transform var(--dur-base) var(--ease-out),
               box-shadow var(--dur-base) var(--ease-out);
 }
 
-:root[data-style="lively"] .stat-card:hover {
+:root[data-style="vivid"] .stat-card:hover {
   transform: translateY(-2px);
   box-shadow: var(--shadow-2);
 }
 
-/* 输入框：聚焦时柔和的紫色光圈 */
-:root[data-style="lively"] .input,
-:root[data-style="lively"] .select {
+/* 输入框：聚焦时柔和的蓝色光圈 */
+:root[data-style="vivid"] .input,
+:root[data-style="vivid"] .select {
   border-color: var(--border);
 }
 
-:root[data-style="lively"] .input:focus,
-:root[data-style="lively"] .select:focus {
+:root[data-style="vivid"] .input:focus,
+:root[data-style="vivid"] .select:focus {
   border-color: var(--accent);
   box-shadow: 0 0 0 4px var(--accent-ring);
 }
 
+/* 过期行悬停：令牌里的浅粉在白底上几乎看不出来，这里加深一档 */
+:root[data-style="vivid"] .table tbody tr.is-expired:hover td {
+  background-color: #FFE4EC;
+}
+
 /* 徽章更圆 */
-:root[data-style="lively"] .badge {
+:root[data-style="vivid"] .badge {
   border-radius: var(--radius-pill);
 }
 
 /* 抽屉左上角收圆，和整体的大圆角一致 */
-:root[data-style="lively"] .drawer {
+:root[data-style="vivid"] .drawer {
   border-top-left-radius: var(--radius-lg);
   border-bottom-left-radius: var(--radius-lg);
 }

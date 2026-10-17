@@ -20,26 +20,28 @@ window.RMS.screens = window.RMS.screens || {};
     { key: 'productionDate', label: '生产日期', sortable: true },
     { key: 'expiryDate',     label: '有效期至', sortable: true },
     { key: 'quantity',       label: '库存数量', cls: 'col-num',   sortable: true },
-    { key: 'daysLeft',       label: '剩余有效期', cls: 'col-center', sortable: false },
+    { key: 'daysLeft',       label: '剩余有效期', cls: 'col-center', sortable: true },
     { key: 'gtin',           label: 'GTIN',     cls: 'col-mono',  sortable: false },
   ];
 
   var EXPIRY_OPTIONS = [
-    { value: 'all',     label: '全部' },
-    { value: 'expired', label: '已过期' },
-    { value: 'soon',    label: '30 天内到期' },
-    { value: 'near',    label: '90 天内到期' },
-    { value: 'valid',   label: '正常' },
+    { value: 'all',       label: '全部' },
+    { value: 'attention', label: '需关注' },
+    { value: 'expired',   label: '已过期' },
+    { value: 'soon',      label: '30 天内到期' },
+    { value: 'near',      label: '90 天内到期' },
+    { value: 'valid',     label: '正常' },
   ];
 
   RMS.screens['screen-inventory'] = {
     components: {
       'ui-pager': RMS.components['ui-pager'],
+      'ui-select': RMS.components['ui-select'],
       'ui-empty': RMS.components['ui-empty'],
       'ui-expiry-badge': RMS.components['ui-expiry-badge'],
     },
     template: [
-      '<div class="page">',
+      '<div class="page page-fill">',
 
       /* 筛选栏按窗口宽度分档排布；出入库统一走顶栏，这里不放动作按钮 */
       '  <div class="filter-toolbar filter-toolbar-inventory">',
@@ -51,10 +53,8 @@ window.RMS.screens = window.RMS.screens || {};
       '           placeholder="试剂名称" @input="onFilterChange" />',
       '    <input class="input filter-batch" v-model="filters.batch"',
       '           placeholder="批号" @input="onFilterChange" />',
-      '    <select class="input select filter-expiry" v-model="filters.expiry"',
-      '            @change="reload">',
-      '      <option v-for="o in expiryOptions" :key="o.value" :value="o.value">{{ o.label }}</option>',
-      '    </select>',
+      '    <ui-select class="filter-expiry" :model-value="filters.expiry"',
+      '               :options="expiryOptions" @change="onExpiryChange"></ui-select>',
       '    <button class="btn filter-reset" @click="resetFilters">重置</button>',
       '  </div>',
 
@@ -134,6 +134,16 @@ window.RMS.screens = window.RMS.screens || {};
       dirty: function () { this.reload(); },
     },
     mounted: function () {
+      // 从概览跳过来时带上一次性筛选条件（需关注批次 → 库存）
+      var pending = store.pending && store.pending.inventory;
+      if (pending) {
+        this.filters = {
+          name: pending.name || '',
+          batch: pending.batch || '',
+          expiry: pending.expiry || 'all',
+        };
+        store.pending.inventory = null;
+      }
       this.reload();
     },
     methods: {
@@ -181,6 +191,10 @@ window.RMS.screens = window.RMS.screens || {};
         var self = this;
         clearTimeout(this._filterTimer);
         this._filterTimer = setTimeout(function () { self.reload(); }, 250);
+      },
+      onExpiryChange: function (value) {
+        this.filters.expiry = value;
+        this.reload();
       },
       resetFilters: function () {
         this.filters = { name: '', batch: '', expiry: 'all' };

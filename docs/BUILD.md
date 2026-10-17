@@ -71,7 +71,31 @@ python -m pip install -r requirements-build.txt
 winget install -e --id JRSoftware.InnoSetup
 ```
 
-### 构建
+### 一键打包（推荐）
+
+双击仓库根目录的 `build.bat` 会出现交互菜单；也可以直接在命令行使用：
+
+```
+build.bat                             # 交互菜单
+build.bat --no-test                   # 完整构建，跳过单元测试
+build.bat --no-test --no-installer    # 只出 Dist
+build.bat --no-test --skip-build      # 用现有 Dist 重打安装包
+build.bat --version 2.2.0 --smoke     # 改版本号 + 完整构建 + 界面自检
+build.bat --help
+```
+
+它会自动完成：
+
+1. 查找 Python 3.8 64 位（`py -3.8` 或 `python`；也可用环境变量
+   `PYTHON38` 指定 python.exe 的完整路径）
+2. 缺构建依赖时执行 `pip install -r requirements-build.txt`
+3. 默认先跑单元测试，失败即中止，不会打出有问题的包
+4. 调用 `tools\build_installer.py`，其余参数原样透传
+5. 结束后打印安装包与 Dist 目录路径
+
+`--no-test`、`--pause` 是 bat 自己的参数，其余参数都交给构建脚本。
+
+### 直接调用构建脚本
 
 ```
 python tools\build_installer.py

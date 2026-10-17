@@ -104,18 +104,18 @@ window.RMS = window.RMS || {};
   };
 
   /* ============================================================
-     免责声明闸门
+     使用须知闸门
      —— 未接受前挡住整个界面，对应旧实现里 init_ui 之前就跑的 check_disclaimer
      ============================================================ */
   var DisclaimerGate = {
     components: { 'ui-modal': RMS.components['ui-modal'] },
     template: [
-      '<ui-modal title="用前须知" size="lg" :dismissible="false">',
+      '<ui-modal title="使用须知" size="lg" :dismissible="false">',
       '  <div class="legal-text" v-if="text">{{ text }}</div>',
       '  <div v-else class="loading-overlay"><span class="spinner"></span> 正在加载…</div>',
       '  <div class="checkbox-row">',
       '    <input type="checkbox" id="disclaimer-ok" v-model="checked" />',
-      '    <label for="disclaimer-ok">我已阅读、理解并同意接受上述条款</label>',
+      '    <label for="disclaimer-ok">我已阅读、理解并同意遵守上述使用须知</label>',
       '  </div>',
       '  <template #footer>',
       '    <button class="btn" @click="reject">拒绝</button>',
@@ -160,6 +160,7 @@ window.RMS = window.RMS || {};
       'disclaimer-gate': DisclaimerGate,
       'inbound-drawer': RMS.components['inbound-drawer'],
       'outbound-drawer': RMS.components['outbound-drawer'],
+      'ui-clock': RMS.components['ui-clock'],
     },
     template: [
       '<div class="app-shell" :class="{ \'is-collapsed\': sidebarCollapsed }">',
@@ -203,16 +204,45 @@ window.RMS = window.RMS || {};
       '            出库',
       '          </button>',
       '        </div>',
+      '        <ui-clock></ui-clock>',
       '      </div>',
       '    </header>',
-      '    <section class="content">',
+      '    <section class="content" ref="content">',
       '      <component :is="screenComponent"',
       '                 @goto-records="gotoRecords"></component>',
       '    </section>',
+      /* 置顶/置底按钮：跟随当前可滚动的区域（页面内容或表格） */
+      '    <transition name="scroll-fade">',
+      '      <div class="scroll-controls" v-if="hasScroll">',
+      '        <transition name="scroll-btn">',
+      '          <button v-if="canScrollUp" class="scroll-btn" title="回到顶部"',
+      '                  @click="scrollTo(\'top\')">',
+      '            <svg viewBox="0 0 24 24" aria-hidden="true">',
+      '              <path d="M12 19V5"></path>',
+      '              <path d="M5 12l7-7 7 7"></path>',
+      '            </svg>',
+      '          </button>',
+      '        </transition>',
+      '        <transition name="scroll-btn">',
+      '          <button v-if="canScrollDown" class="scroll-btn" title="跳到底部"',
+      '                  @click="scrollTo(\'bottom\')">',
+      '            <svg viewBox="0 0 24 24" aria-hidden="true">',
+      '              <path d="M12 5v14"></path>',
+      '              <path d="M5 12l7 7 7-7"></path>',
+      '            </svg>',
+      '          </button>',
+      '        </transition>',
+      '      </div>',
+      '    </transition>',
       '  </main>',
 
-      '  <inbound-drawer v-if="inboundOpen" @close="closeDrawers"></inbound-drawer>',
-      '  <outbound-drawer v-if="outboundOpen" @close="closeDrawers"></outbound-drawer>',
+      /* transition 让抽屉在离开时也有滑出 + 遮罩淡出 */
+      '  <transition name="drawer">',
+      '    <inbound-drawer v-if="inboundOpen" @close="closeDrawers"></inbound-drawer>',
+      '  </transition>',
+      '  <transition name="drawer">',
+      '    <outbound-drawer v-if="outboundOpen" @close="closeDrawers"></outbound-drawer>',
+      '  </transition>',
       '  <disclaimer-gate v-if="showDisclaimer" @done="onDisclaimerDone"></disclaimer-gate>',
       '  <toast-stack></toast-stack>',
       '</div>',
@@ -224,6 +254,10 @@ window.RMS = window.RMS || {};
         disclaimerDismissed: false,
         // 只在本进程内有效：file:// 下 localStorage 不可用，不为这点偏好动后端
         sidebarCollapsed: false,
+        // 滚动控件状态：hasScroll 表示当前区域可滚动
+        hasScroll: false,
+        canScrollUp: false,
+        canScrollDown: false,
       };
     },
     computed: {
@@ -241,14 +275,124 @@ window.RMS = window.RMS || {};
       showDisclaimer: function () {
         return store.ready && !store.disclaimerAccepted && !this.disclaimerDismissed;
       },
+      dirty: function () { return store.dirty; },
+    },
+    watch: {
+      // 换页或数据刷新后，滚动区域可能变化，重新判断一次
+      current: function () { this.scheduleScrollRefresh(); },
+      dirty: function () { this.scheduleScrollRefresh(); },
+    },
+    mounted: function () {
+      window.addEventListener('keydown', this.onGlobalKeydown);
+      window.addEventListener('resize', this.refreshScrollTarget);
+      // scroll 不冒泡，用捕获阶段监听内容区与表格内部的滚动
+      document.addEventListener('scroll', this.onAnyScroll, true);
+      this.scheduleScrollRefresh();
+    },
+    beforeUnmount: function () {
+      window.removeEventListener('keydown', this.onGlobalKeydown);
+      window.removeEventListener('resize', this.refreshScrollTarget);
+      document.removeEventListener('scroll', this.onAnyScroll, true);
+      clearTimeout(this._scrollTimer);
     },
     methods: {
+      /* 全局快捷键：Esc 关闭出入库界面；出入库快捷键打开对应抽屉。
+         抽屉已打开、弹窗打开或正在输入框中打字时都不响应。 */
+      onGlobalKeydown: function (e) {
+        if (e.key === 'Escape' && (this.inboundOpen || this.outboundOpen)) {
+          e.preventDefault();
+          this.closeDrawers();
+          return;
+        }
+        if (this.inboundOpen || this.outboundOpen) { return; }
+        if (this.showDisclaimer) { return; }
+        if (document.querySelector('.modal-scrim')) { return; }
+
+        var el = e.target;
+        var tag = (el && el.tagName) || '';
+        if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT'
+            || (el && el.isContentEditable)) {
+          return;
+        }
+
+        var key = RMS.shortcutFromEvent(e);
+        if (!key) { return; }
+        if (key === store.shortcuts.inbound) {
+          e.preventDefault();
+          this.inboundOpen = true;
+        } else if (key === store.shortcuts.outbound) {
+          e.preventDefault();
+          this.outboundOpen = true;
+        }
+      },
       closeDrawers: function () {
         this.inboundOpen = false;
         this.outboundOpen = false;
       },
       gotoRecords: function () { router.go('records'); },
       onDisclaimerDone: function () { this.disclaimerDismissed = true; },
+      /* ---------- 置顶 / 置底 ---------- */
+
+      /* 找到当前真正滚动的区域：列表页是表格内部，其余页面是内容区 */
+      refreshScrollTarget: function () {
+        var content = this.$refs.content;
+        if (!content) { return; }
+
+        var table = content.querySelector('.table-wrap');
+        var target = null;
+        if (content.scrollHeight > content.clientHeight + 4) {
+          target = content;
+        } else if (table && table.scrollHeight > table.clientHeight + 4) {
+          target = table;
+        }
+        this._scrollEl = target;
+        this.updateScrollState();
+      },
+
+      scheduleScrollRefresh: function () {
+        // 数据是异步加载的，换页后稍等再判断可滚动区域
+        var self = this;
+        clearTimeout(this._scrollTimer);
+        this._scrollTimer = setTimeout(function () { self.refreshScrollTarget(); }, 200);
+        setTimeout(function () { self.refreshScrollTarget(); }, 900);
+      },
+
+      updateScrollState: function () {
+        var el = this._scrollEl;
+        if (!el) {
+          this.hasScroll = false;
+          this.canScrollUp = false;
+          this.canScrollDown = false;
+          return;
+        }
+        var max = el.scrollHeight - el.clientHeight;
+        this.hasScroll = max > 4;
+        this.canScrollUp = el.scrollTop > 4;
+        this.canScrollDown = el.scrollTop < max - 4;
+      },
+
+      onAnyScroll: function (e) {
+        var el = e.target;
+        if (!el || !el.classList) { return; }
+        var isContent = el.classList.contains('content');
+        var isTable = el.classList.contains('table-wrap');
+        if (!isContent && !isTable) { return; }
+
+        if (el === this._scrollEl) {
+          this.updateScrollState();
+          return;
+        }
+        // 滚动目标变了（例如换页后表格开始滚动），重新判定一次
+        this.refreshScrollTarget();
+      },
+
+      scrollTo: function (where) {
+        var el = this._scrollEl;
+        if (!el) { return; }
+        var top = where === 'bottom' ? el.scrollHeight : 0;
+        if (el.scrollTo) { el.scrollTo({ top: top, behavior: 'smooth' }); }
+        else { el.scrollTop = top; }
+      },
     },
   };
 

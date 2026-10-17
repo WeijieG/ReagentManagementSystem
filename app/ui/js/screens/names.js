@@ -138,12 +138,13 @@ window.RMS.screens = window.RMS.screens || {};
 
   RMS.screens['screen-names'] = {
     components: {
+      'ui-pager': RMS.components['ui-pager'],
       'ui-empty': RMS.components['ui-empty'],
       'name-edit': EditModal,
       'name-confirm': ConfirmModal,
     },
     template: [
-      '<div class="page">',
+      '<div class="page page-fill">',
       '  <div class="page-toolbar">',
       '    <input class="input" style="width:260px" v-model="filter"',
       '           placeholder="搜索试剂名称…" />',
@@ -161,10 +162,16 @@ window.RMS.screens = window.RMS.screens || {};
       '    <div v-else class="table-wrap">',
       '      <table class="table">',
       '        <thead><tr>',
-      '          <th>试剂名称</th><th>GTIN 绑定</th><th style="width:180px">操作</th>',
+      '          <th class="is-sortable" :class="{ \'is-sorted\': sort.col === \'name\' }"',
+      '              @click="toggleSort(\'name\')">',
+      '            试剂名称 <span class="table-sort-mark">{{ sortMark(\'name\') }}</span></th>',
+      '          <th class="is-sortable" :class="{ \'is-sorted\': sort.col === \'gtin\' }"',
+      '              @click="toggleSort(\'gtin\')">',
+      '            GTIN 绑定 <span class="table-sort-mark">{{ sortMark(\'gtin\') }}</span></th>',
+      '          <th style="width:180px">操作</th>',
       '        </tr></thead>',
       '        <tbody>',
-      '          <tr v-for="r in filtered" :key="r.name">',
+      '          <tr v-for="r in paged" :key="r.name">',
       '            <td>{{ r.name }}</td>',
       '            <td>',
       '              <span v-if="r.gtin" class="mono">{{ r.gtin }}</span>',
@@ -179,6 +186,9 @@ window.RMS.screens = window.RMS.screens || {};
       '        </tbody>',
       '      </table>',
       '    </div>',
+      '    <ui-pager v-if="total > 0"',
+      '              :page="page" :pages="pages" :total="total" :page-size="pageSize"',
+      '              @change="goPage" @size-change="changeSize"></ui-pager>',
       '  </div>',
 
       '  <name-edit v-if="editing" :mode="editing.mode" :row="editing.row"',
@@ -194,21 +204,45 @@ window.RMS.screens = window.RMS.screens || {};
         filter: '',
         editing: null,
         pendingDelete: null,
+        sort: { col: 'name', dir: 'asc' },
+        page: 1,
+        pageSize: 50,
       };
     },
     computed: {
       filtered: function () {
         var q = this.filter.trim().toLowerCase();
-        if (!q) { return this.rows; }
-        return this.rows.filter(function (r) {
+        var rows = !q ? this.rows.slice() : this.rows.filter(function (r) {
           return r.name.toLowerCase().indexOf(q) >= 0
               || (r.gtin || '').indexOf(q) >= 0;
         });
+
+        var col = this.sort.col;
+        var sign = this.sort.dir === 'asc' ? 1 : -1;
+        rows.sort(function (a, b) {
+          return String(a[col] || '').localeCompare(String(b[col] || '')) * sign;
+        });
+        return rows;
       },
       deleteText: function () {
         return this.pendingDelete
           ? '确定要删除试剂名称「' + this.pendingDelete.name + '」吗？若该名称已有库存或出入库记录，将无法删除。'
           : '';
+      },
+
+      /* ---------- 分页（筛选与排序都在本地完成，再切片） ---------- */
+      total: function () { return this.filtered.length; },
+      pages: function () { return Math.max(1, Math.ceil(this.total / this.pageSize)); },
+      paged: function () {
+        var start = (this.page - 1) * this.pageSize;
+        return this.filtered.slice(start, start + this.pageSize);
+      },
+    },
+    watch: {
+      filter: function () { this.page = 1; },
+      // 删除或筛选后页数变少时，回到最后一页
+      pages: function (pages) {
+        if (this.page > pages) { this.page = pages; }
       },
     },
     mounted: function () {
@@ -225,6 +259,25 @@ window.RMS.screens = window.RMS.screens || {};
           self.loading = false;
           RMS.toast('error', '加载试剂名称失败：' + err.message);
         });
+      },
+      goPage: function (p) { this.page = p; },
+      changeSize: function (size) {
+        this.pageSize = size;
+        this.page = 1;
+      },
+
+      toggleSort: function (key) {
+        if (this.sort.col === key) {
+          this.sort.dir = this.sort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.sort.col = key;
+          this.sort.dir = 'asc';
+        }
+        this.page = 1;
+      },
+      sortMark: function (key) {
+        if (this.sort.col !== key) { return '↕'; }
+        return this.sort.dir === 'asc' ? '↑' : '↓';
       },
       openAdd: function () { this.editing = { mode: 'add', row: null }; },
       openEdit: function (row) { this.editing = { mode: 'edit', row: row }; },

@@ -9,18 +9,18 @@
 对话框关闭后由父窗口回头调 refresh_widget() 的耦合写法。
 """
 
-import datetime
-
 from ..bridge import BridgeError, ErrorCode
-from ..core import integrity, version as version_mod
+from ..core import clock, integrity, version as version_mod
 
 
 def now_timestamp():
     """与旧实现一致的记录时间戳格式：yyyy-MM-dd HH:mm:ss:zzz
 
-    旧代码用 QDateTime.toString("yyyy-MM-dd HH:mm:ss:zzz")，毫秒为 3 位。
+    时间取 clock.current_datetime()：联网校时成功时使用网络时间，
+    断网或校时失败时自动回退本机时间。毫秒为 3 位，与旧实现的
+    QDateTime.toString("yyyy-MM-dd HH:mm:ss:zzz") 对齐。
     """
-    now = datetime.datetime.now()
+    now = clock.current_datetime()
     return now.strftime("%Y-%m-%d %H:%M:%S:") + f"{now.microsecond // 1000:03d}"
 
 
@@ -53,12 +53,28 @@ def build_action_handlers(ctx):
     # 应用级
     # ------------------------------------------------------------------
     def style_set(payload):
-        # 具体风格名单由前端的 STYLES 注册表维护，这里只校验标识格式
-        style = (payload.get("style") or "light").strip()
+        # 具体风格名单由前端的 STYLES 注册表维护，这里只校验标识格式；
+        # 旧标识顺手映射到新标识，避免把过期值写回配置。
+        style = (payload.get("style") or integrity.UI_STYLE_FALLBACK).strip()
+        style = integrity.UI_STYLE_ALIASES.get(style, style)
         if not integrity.is_valid_ui_style(style):
             raise BridgeError(ErrorCode.VALIDATION, f"不支持的界面风格: {style}")
         integrity.set_ui_style(style)
         return {"style": style}
+
+    def shortcuts_set(payload):
+        inbound = (payload.get("inbound") or "").strip().upper()
+        outbound = (payload.get("outbound") or "").strip().upper()
+        for label, key in (("入库", inbound), ("出库", outbound)):
+            if key and not integrity.is_valid_shortcut(key):
+                raise BridgeError(
+                    ErrorCode.VALIDATION,
+                    f"{label}快捷键无效：请使用字母、数字或 F1–F12",
+                )
+        if inbound and inbound == outbound:
+            raise BridgeError(ErrorCode.VALIDATION, "入库与出库不能使用同一个快捷键")
+        integrity.set_shortcuts(inbound, outbound)
+        return {"inbound": inbound, "outbound": outbound}
 
     def disclaimer_accept(payload):
         accepted = bool(payload.get("accepted", True))
@@ -178,6 +194,7 @@ def build_action_handlers(ctx):
 
     return {
         "style.set": style_set,
+        "shortcuts.set": shortcuts_set,
         "disclaimer.accept": disclaimer_accept,
         "app.quit": app_quit,
         "names.add": names_add,

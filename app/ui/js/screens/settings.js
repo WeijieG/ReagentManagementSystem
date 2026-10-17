@@ -11,9 +11,10 @@ window.RMS.screens = window.RMS.screens || {};
   RMS.screens['screen-settings'] = {
     components: {
       'ui-modal': RMS.components['ui-modal'],
+      'ui-select': RMS.components['ui-select'],
     },
     template: [
-      '<div class="page" style="max-width:880px">',
+      '<div class="page page-narrow">',
 
       /* 导入后必须重启才生效 —— 当前连接里读的还是旧库 */
       '  <div v-if="needRestart" class="card" style="margin-bottom:20px;border-color:var(--warning)">',
@@ -34,13 +35,48 @@ window.RMS.screens = window.RMS.screens || {};
       '        <div class="setting-main">',
       '          <div class="setting-label">界面风格</div>',
       '          <div class="setting-desc">',
-      '            默认、科技、极简、灵动与 iOS 风格都在这里选择，切换后立即生效',
+      '            明暗已并入风格，选择后立即生效',
       '          </div>',
       '        </div>',
-      '        <select class="input select setting-select" :value="uiStyle"',
-      '                @change="setStyle($event.target.value)">',
-      '          <option v-for="o in styles" :key="o.value" :value="o.value">{{ o.label }}</option>',
-      '        </select>',
+      '        <ui-select class="setting-select" :model-value="uiStyle"',
+      '                   :options="styles" @change="setStyle"></ui-select>',
+      '      </div>',
+      '    </div>',
+      '  </div>',
+
+      /* ---- 快捷键 ---- */
+      '  <div class="card" style="margin-bottom:20px">',
+      '    <div class="card-header"><div class="card-title">快捷键</div></div>',
+      '    <div class="card-body">',
+      '      <div class="setting-row">',
+      '        <div class="setting-main">',
+      '          <div class="setting-label">入库</div>',
+      '          <div class="setting-desc">',
+      '            聚焦后按下要使用的按键；支持字母、数字与 F1–F12',
+      '          </div>',
+      '        </div>',
+      '        <input class="input shortcut-input" readonly',
+      '               :value="capturing === \'inbound\' ? \'按下按键…\' : (shortcuts.inbound || \'未设置\')"',
+      '               @focus="startCapture(\'inbound\')"',
+      '               @blur="endCapture"',
+      '               @keydown="onShortcutKey($event, \'inbound\')" />',
+      '        <button class="btn btn-sm" style="margin-left:8px"',
+      '                @click="clearShortcut(\'inbound\')">清除</button>',
+      '      </div>',
+      '      <div class="setting-row">',
+      '        <div class="setting-main">',
+      '          <div class="setting-label">出库</div>',
+      '          <div class="setting-desc">',
+      '            出入库界面打开时快捷键自动失效；按 Esc 可关闭界面',
+      '          </div>',
+      '        </div>',
+      '        <input class="input shortcut-input" readonly',
+      '               :value="capturing === \'outbound\' ? \'按下按键…\' : (shortcuts.outbound || \'未设置\')"',
+      '               @focus="startCapture(\'outbound\')"',
+      '               @blur="endCapture"',
+      '               @keydown="onShortcutKey($event, \'outbound\')" />',
+      '        <button class="btn btn-sm" style="margin-left:8px"',
+      '                @click="clearShortcut(\'outbound\')">清除</button>',
       '      </div>',
       '    </div>',
       '  </div>',
@@ -140,12 +176,12 @@ window.RMS.screens = window.RMS.screens || {};
       '          <div class="setting-label">试剂库存管理系统</div>',
       '          <div class="setting-desc">版本 {{ version || "未知" }}</div>',
       '        </div>',
-      '        <button class="btn" @click="showAbout = true">开源说明</button>',
+      '        <button class="btn" @click="showAbout = true">开源声明</button>',
       '      </div>',
       '    </div>',
       '  </div>',
 
-      '  <ui-modal v-if="showAbout" title="开源说明" size="lg" @close="showAbout = false">',
+      '  <ui-modal v-if="showAbout" title="开源声明" size="lg" @close="showAbout = false">',
       '    <div class="legal-text">{{ aboutText }}</div>',
       '  </ui-modal>',
 
@@ -162,10 +198,12 @@ window.RMS.screens = window.RMS.screens || {};
         needRestart: false,
         showAbout: false,
         aboutText: '',
+        capturing: '',   // 正在录入快捷键的行：inbound / outbound
       };
     },
     computed: {
       uiStyle: function () { return store.style; },
+      shortcuts: function () { return store.shortcuts; },
       version: function () { return store.version; },
       dbPath: function () { return store.dbPath; },
       dbIssues: function () { return store.dbIssues; },
@@ -198,6 +236,42 @@ window.RMS.screens = window.RMS.screens || {};
     },
     methods: {
       setStyle: function (style) { RMS.setStyle(style); },
+
+      /* ---------- 快捷键录入 ---------- */
+      startCapture: function (which) { this.capturing = which; },
+      endCapture: function () { this.capturing = ''; },
+      onShortcutKey: function (e, which) {
+        e.preventDefault();
+        e.stopPropagation();
+
+        if (e.key === 'Escape') {
+          this.capturing = '';
+          e.target.blur();
+          return;
+        }
+        if (e.key === 'Backspace' || e.key === 'Delete') {
+          this.capturing = '';
+          e.target.blur();
+          RMS.setShortcut(which, '');
+          return;
+        }
+
+        var key = RMS.shortcutFromEvent(e);
+        if (!key) {
+          RMS.toast('warning', '该按键不可用，请使用字母、数字或 F1–F12');
+          return;
+        }
+        var other = which === 'inbound' ? 'outbound' : 'inbound';
+        if (store.shortcuts[other] === key) {
+          RMS.toast('warning', '该按键已用于' + (other === 'inbound' ? '入库' : '出库'));
+          return;
+        }
+
+        this.capturing = '';
+        e.target.blur();
+        RMS.setShortcut(which, key);
+      },
+      clearShortcut: function (which) { RMS.setShortcut(which, ''); },
 
       backup: function () {
         var self = this;

@@ -40,13 +40,26 @@ window.RMS.screens = window.RMS.screens || {};
     { key: 'all',   label: '全部',     range: function () { return ['', '']; } },
   ];
 
+  // key 必须与后端 RECORD_SORT_COLUMNS 的白名单一致
+  var COLUMNS = [
+    { key: '',          label: '类型',       sortable: false },
+    { key: '',          label: 'ID',         cls: 'col-num', sortable: false },
+    { key: 'name',      label: '试剂名称',   sortable: true },
+    { key: 'batch',     label: '批号',       cls: 'col-mono', sortable: true },
+    { key: 'date',      label: '日期',       sortable: true },
+    { key: 'quantity',  label: '数量',       cls: 'col-num', sortable: true },
+    { key: 'operator',  label: '操作员',     sortable: true },
+    { key: 'remaining', label: '操作后库存', cls: 'col-num', sortable: true },
+  ];
+
   RMS.screens['screen-records'] = {
     components: {
       'ui-pager': RMS.components['ui-pager'],
+      'ui-select': RMS.components['ui-select'],
       'ui-empty': RMS.components['ui-empty'],
     },
     template: [
-      '<div class="page">',
+      '<div class="page page-fill">',
 
       /* 筛选栏按窗口宽度分档排布，避免控件零散换行 */
       '  <div class="filter-toolbar filter-toolbar-records">',
@@ -54,12 +67,8 @@ window.RMS.screens = window.RMS.screens || {};
       '      <input class="input" v-model="scanText" placeholder="扫描条码筛选记录…"',
       '             @keyup.enter="onScan" />',
       '    </div>',
-      '    <select class="input select filter-type" v-model="filters.type"',
-      '            @change="reload">',
-      '      <option value="all">全部记录</option>',
-      '      <option value="inbound">仅入库</option>',
-      '      <option value="outbound">仅出库</option>',
-      '    </select>',
+      '    <ui-select class="filter-type" :model-value="filters.type"',
+      '               :options="typeOptions" @change="onTypeChange"></ui-select>',
       '    <input class="input filter-name" v-model="filters.name"',
       '           placeholder="试剂名称" @input="onFilterChange" />',
       '    <input class="input filter-batch" v-model="filters.batch"',
@@ -93,9 +102,13 @@ window.RMS.screens = window.RMS.screens || {};
       '    <div v-else class="table-wrap">',
       '      <table class="table">',
       '        <thead><tr>',
-      '          <th>类型</th><th class="col-num">ID</th><th>试剂名称</th>',
-      '          <th>批号</th><th>日期</th><th class="col-num">数量</th>',
-      '          <th>操作员</th><th class="col-num">操作后库存</th>',
+      '          <th v-for="(c, i) in columns" :key="i"',
+      '              :class="[c.cls, { \'is-sortable\': c.sortable,',
+      '                               \'is-sorted\': c.sortable && sort.col === c.key }]"',
+      '              @click="c.sortable && toggleSort(c.key)">',
+      '            {{ c.label }}',
+      '            <span v-if="c.sortable" class="table-sort-mark">{{ sortMark(c.key) }}</span>',
+      '          </th>',
       '        </tr></thead>',
       '        <tbody>',
       '          <tr v-for="r in rows" :key="r.kind + r.id">',
@@ -125,6 +138,12 @@ window.RMS.screens = window.RMS.screens || {};
     data: function () {
       return {
         presets: PRESETS,
+        columns: COLUMNS,
+        typeOptions: [
+          { value: 'all', label: '全部记录' },
+          { value: 'inbound', label: '仅入库' },
+          { value: 'outbound', label: '仅出库' },
+        ],
         activePreset: '30d',
         rows: [],
         total: 0,
@@ -133,6 +152,7 @@ window.RMS.screens = window.RMS.screens || {};
         pageSize: 50,
         loading: false,
         filters: { type: 'all', name: '', batch: '', start: daysAgo(29), end: today() },
+        sort: { col: 'date', dir: 'desc' },
         scanText: '',
         scanState: '',
         generation: 0,
@@ -145,6 +165,19 @@ window.RMS.screens = window.RMS.screens || {};
       dirty: function () { this.reload(); },
     },
     mounted: function () {
+      // 从概览「最近操作」跳过来时，展示与首页一致的全部记录条件
+      var pending = store.pending && store.pending.records;
+      if (pending) {
+        this.filters = {
+          type: pending.type || 'all',
+          name: pending.name || '',
+          batch: pending.batch || '',
+          start: pending.start || '',
+          end: pending.end || '',
+        };
+        this.activePreset = pending.preset || '';
+        store.pending.records = null;
+      }
       this.fetch();
     },
     methods: {
@@ -155,6 +188,21 @@ window.RMS.screens = window.RMS.screens || {};
       goPage: function (p) { this.page = p; this.fetch(); },
       changeSize: function (s) { this.pageSize = s; this.page = 1; this.fetch(); },
 
+      toggleSort: function (key) {
+        if (this.sort.col === key) {
+          this.sort.dir = this.sort.dir === 'asc' ? 'desc' : 'asc';
+        } else {
+          this.sort.col = key;
+          this.sort.dir = 'asc';
+        }
+        this.page = 1;
+        this.fetch();
+      },
+      sortMark: function (key) {
+        if (this.sort.col !== key) { return '↕'; }
+        return this.sort.dir === 'asc' ? '↑' : '↓';
+      },
+
       fetch: function () {
         var self = this;
         var gen = ++this.generation;
@@ -164,6 +212,7 @@ window.RMS.screens = window.RMS.screens || {};
           page: this.page,
           pageSize: this.pageSize,
           filters: this.filters,
+          sort: this.sort,
         }).then(function (data) {
           if (gen !== self.generation) { return; }
           self.rows = data.rows;
@@ -182,6 +231,10 @@ window.RMS.screens = window.RMS.screens || {};
         var self = this;
         clearTimeout(this._t);
         this._t = setTimeout(function () { self.reload(); }, 250);
+      },
+      onTypeChange: function (value) {
+        this.filters.type = value;
+        this.reload();
       },
       onDateChange: function () {
         this.activePreset = '';

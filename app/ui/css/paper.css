@@ -1,0 +1,390 @@
+/* 纸墨风格皮肤。
+ *
+ * 由 <html data-style="paper" data-theme="light"> 激活。
+ * 米色纸张底、墨色正文、朱砂强调色；标题和数字用宋体，
+ * 数据表保持无衬线。几乎没有阴影，靠细线和纸色分层，
+ * 气质安静、偏东方。和偏现代的其它皮肤形成明显区分。
+ *
+ * 注意：内核是 Chromium 83，不能用 :is()/:where()/:has()/color-mix()，
+ * 也不能用 flex 容器的 gap（grid 的 gap 可用）。
+ */
+
+:root[data-style="paper"] {
+  /* ---- 表面：米纸 ---- */
+  --bg-app:          #F3EEE3;
+  --bg-surface:      #FBF7EE;
+  --bg-surface-2:    #F1EADB;
+  --bg-raised:       #FDFAF3;
+  --bg-hover:        #EDE5D5;
+  --bg-active:       #E4D9C5;
+  --bg-scrim:        rgba(48, 38, 24, 0.32);
+  --bg-scrim-soft:   rgba(48, 38, 24, 0.16);
+
+  /* ---- 文字：墨色 ---- */
+  --text-primary:    #2A241C;
+  --text-secondary:  #5C5243;
+  --text-muted:      #8C806D;
+  --text-disabled:   #B8AC97;
+  --text-inverse:    #FFFFFF;
+  --text-on-accent:  #FFFFFF;
+
+  /* ---- 描边 ---- */
+  --border:          #E2D8C6;
+  --border-subtle:   #EBE3D4;
+  --border-strong:   #D2C4AC;
+  --border-focus:    #9C3D2E;
+
+  /* ---- 强调色：朱砂 ---- */
+  --accent:          #9C3D2E;
+  --accent-hover:    #853426;
+  --accent-active:   #6F2A1E;
+  --accent-subtle:   #F4E6E1;
+  --accent-fg:       #FFFFFF;
+  --accent-ring:     rgba(156, 61, 46, 0.24);
+
+  /* ---- 出入库语义色 ---- */
+  --in-fg:           #3F6B52;
+  --in-bg:           #EAF1E8;
+  --in-border:       #D5E2D7;
+  --out-fg:          #9C3D2E;
+  --out-bg:          #F6E9E4;
+  --out-border:      #E8D3CB;
+
+  /* ---- 效期状态色 ---- */
+  --expiry-expired-fg:  #9C3D2E;
+  --expiry-expired-bg:  #F6E9E4;
+  --expiry-warn30-fg:   #8A6A1E;
+  --expiry-warn30-bg:   #F6F0E0;
+  --expiry-warn90-fg:   #7A6A1E;
+  --expiry-warn90-bg:   #F4EFD9;
+  --expiry-ok-fg:       #3F6B52;
+  --expiry-ok-bg:       #EAF1E8;
+
+  /* ---- 通用状态色 ---- */
+  --success:         #3F6B52;
+  --success-bg:      #EAF1E8;
+  --warning:         #8A6A1E;
+  --warning-bg:      #F6F0E0;
+  --danger:          #9C3D2E;
+  --danger-bg:       #F6E9E4;
+  --info:            #4A6B82;
+  --info-bg:         #EAF0F3;
+
+  /* ---- 阴影：纸张几乎不悬浮，只留极浅的一层 ---- */
+  --shadow-1: 0 1px 2px rgba(70, 52, 30, 0.06);
+  --shadow-2: 0 8px 20px rgba(70, 52, 30, 0.12);
+  --shadow-modal: 0 24px 56px rgba(50, 38, 22, 0.22);
+
+  /* ---- 圆角：偏方正 ---- */
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-pill: 999px;
+
+  --tooltip-bg: #2A241C;
+  --tooltip-fg: #FBF7EE;
+
+  --font-serif: "Songti SC", "SimSun", "STSong", "Noto Serif CJK SC", serif;
+}
+
+/* ============================================================
+   纸张底：极淡的纤维纹
+   ============================================================ */
+:root[data-style="paper"] .content {
+  background-color: var(--bg-app);
+  background-image:
+    radial-gradient(800px 420px at 50% -12%,
+                    rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 62%),
+    repeating-linear-gradient(0deg,
+      rgba(120, 100, 70, 0.015) 0,
+      rgba(120, 100, 70, 0.015) 1px,
+      rgba(0, 0, 0, 0) 1px,
+      rgba(0, 0, 0, 0) 6px);
+  background-attachment: local;
+}
+
+:root[data-style="paper"] .topbar {
+  background-color: var(--bg-app);
+  border-bottom-color: var(--border);
+}
+
+:root[data-style="paper"] .topbar-title,
+:root[data-style="paper"] .modal-title,
+:root[data-style="paper"] .card-title {
+  font-family: var(--font-serif);
+  letter-spacing: 0.04em;
+}
+
+:root[data-style="paper"] .sidebar {
+  background-color: var(--bg-surface-2);
+  border-right-color: var(--border);
+}
+
+:root[data-style="paper"] .sidebar-brand {
+  border-bottom-color: var(--border);
+}
+
+:root[data-style="paper"] .sidebar-brand-mark {
+  border-radius: 5px;
+  background-color: var(--accent);
+  background-image: linear-gradient(145deg, #B4543F 0%, #9C3D2E 60%, #7C3023 100%);
+  box-shadow: none;
+}
+
+:root[data-style="paper"] .sidebar-brand-text {
+  font-family: var(--font-serif);
+  letter-spacing: 0.06em;
+}
+
+/* 导航：像书页边缘的标记 */
+:root[data-style="paper"] .nav-item {
+  border-radius: 4px;
+  color: var(--text-secondary);
+}
+
+:root[data-style="paper"] .nav-item:hover {
+  background-color: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+:root[data-style="paper"] .nav-item.is-active {
+  background-color: var(--accent-subtle);
+  color: var(--accent);
+  font-weight: 600;
+  box-shadow: inset 3px 0 0 var(--accent);
+}
+
+:root[data-style="paper"] .sidebar-bottom {
+  border-top-color: var(--border-subtle);
+}
+
+:root[data-style="paper"] .sidebar-toggle:hover,
+:root[data-style="paper"] .sidebar-toggle:focus {
+  background-color: var(--bg-hover);
+  border-color: var(--border);
+  color: var(--accent);
+}
+
+/* 顶栏时钟：一枚纸标签 */
+:root[data-style="paper"] .topbar-clock {
+  border-color: var(--border);
+  background-color: var(--bg-surface);
+  border-radius: 5px;
+  box-shadow: none;
+}
+
+/* ============================================================
+   卡片：纸片，细边，几乎不投影
+   ============================================================ */
+:root[data-style="paper"] .card,
+:root[data-style="paper"] .stat-card {
+  border: 1px solid var(--border);
+  background-color: var(--bg-surface);
+  box-shadow: var(--shadow-1);
+}
+
+:root[data-style="paper"] .card-header {
+  border-bottom-color: var(--border);
+  background-color: transparent;
+}
+
+:root[data-style="paper"] .stat-label {
+  font-family: var(--font-serif);
+  letter-spacing: 0.04em;
+}
+
+:root[data-style="paper"] .stat-value {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+/* ============================================================
+   按钮：细边方角，主按钮填朱砂
+   ============================================================ */
+:root[data-style="paper"] .btn {
+  border-color: var(--border-strong);
+  border-radius: 6px;
+  background-color: transparent;
+  box-shadow: none;
+  font-weight: 500;
+}
+
+:root[data-style="paper"] .btn:hover:not(:disabled) {
+  border-color: var(--text-muted);
+  background-color: var(--bg-surface-2);
+}
+
+:root[data-style="paper"] .btn:active:not(:disabled) {
+  background-color: var(--bg-active);
+}
+
+:root[data-style="paper"] .btn-primary {
+  border-color: var(--accent);
+  background-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+:root[data-style="paper"] .btn-primary:hover:not(:disabled) {
+  border-color: var(--accent-hover);
+  background-color: var(--accent-hover);
+}
+
+:root[data-style="paper"] .btn-primary:active:not(:disabled) {
+  background-color: var(--accent-active);
+}
+
+:root[data-style="paper"] .btn-in {
+  border-color: var(--in-border);
+  background-color: transparent;
+  color: var(--in-fg);
+}
+
+:root[data-style="paper"] .btn-out {
+  border-color: var(--out-border);
+  background-color: transparent;
+  color: var(--out-fg);
+}
+
+:root[data-style="paper"] .btn-in:hover:not(:disabled),
+:root[data-style="paper"] .btn-in:active:not(:disabled) {
+  border-color: var(--in-fg);
+  background-color: var(--in-fg);
+  color: var(--text-inverse);
+}
+
+:root[data-style="paper"] .btn-out:hover:not(:disabled),
+:root[data-style="paper"] .btn-out:active:not(:disabled) {
+  border-color: var(--out-fg);
+  background-color: var(--out-fg);
+  color: var(--text-inverse);
+}
+
+:root[data-style="paper"] .btn-ghost {
+  border-color: transparent;
+  background-color: transparent;
+}
+
+:root[data-style="paper"] .icon-btn:hover {
+  background-color: var(--bg-hover);
+  color: var(--accent);
+}
+
+/* ============================================================
+   表单
+   ============================================================ */
+:root[data-style="paper"] .input,
+:root[data-style="paper"] .select {
+  border-color: var(--border-strong);
+  border-radius: 6px;
+  background-color: #FFFDF8;
+}
+
+:root[data-style="paper"] .input:hover,
+:root[data-style="paper"] .select:hover {
+  border-color: var(--text-muted);
+}
+
+:root[data-style="paper"] .input:focus,
+:root[data-style="paper"] .select:focus {
+  border-color: var(--accent);
+  background-color: #FFFFFF;
+  box-shadow: 0 0 0 3px var(--accent-ring);
+}
+
+:root[data-style="paper"] .scan-input::before {
+  border-color: var(--accent);
+  border-top-color: transparent;
+  border-left-color: transparent;
+}
+
+:root[data-style="paper"] .combo-menu {
+  border-color: var(--border-strong);
+  border-radius: 8px;
+  background-color: var(--bg-raised);
+  box-shadow: var(--shadow-2);
+}
+
+/* ============================================================
+   表格：像账簿
+   ============================================================ */
+:root[data-style="paper"] .table thead th {
+  background-color: transparent;
+  border-bottom: 2px solid var(--border-strong);
+  color: var(--text-secondary);
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+:root[data-style="paper"] .table tbody td {
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+:root[data-style="paper"] .table tbody tr:hover td {
+  background-color: var(--bg-surface-2);
+}
+
+:root[data-style="paper"] .table tbody tr.is-selected td {
+  background-color: var(--accent-subtle);
+}
+
+/* ============================================================
+   徽章 / 分段选择器 / 进度 / 开关
+   ============================================================ */
+:root[data-style="paper"] .badge {
+  border-radius: 4px;
+}
+
+:root[data-style="paper"] .segmented {
+  border-color: var(--border-strong);
+  border-radius: 6px;
+}
+
+:root[data-style="paper"] .segmented button.is-active {
+  background-color: var(--accent);
+  color: var(--accent-fg);
+}
+
+:root[data-style="paper"] .switch input:checked + .switch-track {
+  background-color: var(--accent);
+}
+
+:root[data-style="paper"] .progress {
+  background-color: var(--bg-surface-2);
+}
+
+:root[data-style="paper"] .progress-bar {
+  background-color: var(--accent);
+}
+
+/* ============================================================
+   弹窗 / 抽屉 / Toast
+   ============================================================ */
+:root[data-style="paper"] .modal {
+  border-color: var(--border-strong);
+  border-radius: 10px;
+  box-shadow: var(--shadow-modal);
+}
+
+:root[data-style="paper"] .modal-header {
+  border-bottom-color: var(--border);
+}
+
+:root[data-style="paper"] .modal-footer {
+  background-color: var(--bg-surface-2);
+  border-top-color: var(--border);
+}
+
+:root[data-style="paper"] .drawer {
+  border-left: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-modal);
+}
+
+:root[data-style="paper"] .toast {
+  border-radius: 8px;
+}
+
+:root[data-style="paper"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
+}

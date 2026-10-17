@@ -10,10 +10,13 @@
 最后把指定页面截图。不需要人工点击，可直接在 Win7 虚拟机上跑。
 
 运行：
-    python tools/ui_smoke_test.py                  # 浅色默认风格，截图库存页
-    python tools/ui_smoke_test.py --theme dark
-    python tools/ui_smoke_test.py --style tech --theme dark
+    python tools/ui_smoke_test.py                  # 明亮风格，截图库存页
+    python tools/ui_smoke_test.py --style night
+    python tools/ui_smoke_test.py --style vivid
     python tools/ui_smoke_test.py --shot dashboard
+
+--theme 仅在 --style default（兼容旧用法）时用于选明亮/暗夜；其余皮肤主题固定。
+为兼容旧用法，--style 仍接受 light/dark/lively/minimal/ios/simple/default。
 """
 
 import datetime
@@ -101,8 +104,28 @@ def main():
                     shot_route = sys.argv[idx + 1]
 
     from app.core import integrity
-    integrity.set_theme(theme)
-    integrity.set_ui_style(style)
+
+    # --style 传 data-style 标识，每个皮肤的主题是固定的。
+    # 旧标识仍可用，先统一映射到新标识；已移除的皮肤回落到明亮。
+    legacy = {
+        "default": None, "light": "bright", "dark": "night",
+        "lively": "vivid",
+        "minimal": "bright", "ios": "bright", "ios-bright": "bright",
+        "ios-dark": "bright", "ios-night": "bright",
+        "simple": "bright", "simple-bright": "bright", "simple-night": "bright",
+    }
+    if style in legacy:
+        style = legacy[style] or ("night" if theme == "dark" else "bright")
+
+    expected_style = style
+    expected_theme = {
+        "bright": "light", "night": "dark",
+        "tech": "dark", "vivid": "light", "soft": "light",
+        "depth": "light", "glass": "dark", "paper": "light",
+    }.get(style, theme)
+    preference = style
+
+    integrity.set_ui_style(preference)
     # 免责声明是会挡住整个界面的闸门，测试里先放行，否则截到的都是它
     integrity.set_disclaimer_accepted(True)
 
@@ -162,10 +185,12 @@ def main():
 
             if state.get("fatalVisible"):
                 problems.append(f"[{label}] 致命错误面板被触发: {state.get('fatalText')}")
-            if state.get("theme") != theme:
-                problems.append(f"[{label}] 主题应为 {theme}，实际 {state.get('theme')}")
-            if state.get("style") != style:
-                problems.append(f"[{label}] 风格应为 {style}，实际 {state.get('style')}")
+            if state.get("theme") != expected_theme:
+                problems.append(
+                    f"[{label}] 主题应为 {expected_theme}，实际 {state.get('theme')}")
+            if state.get("style") != expected_style:
+                problems.append(
+                    f"[{label}] 风格应为 {expected_style}，实际 {state.get('style')}")
             if minimum and state.get("matches", 0) < minimum:
                 problems.append(
                     f"[{label}] 选择器 {selector!r} 期望至少 {minimum} 个元素，"
@@ -294,7 +319,8 @@ def main():
             for p in problems:
                 print("  - " + p)
         else:
-            print(f"\n冒烟测试通过（主题 {theme}，风格 {style}，共 {len(ROUTE_CHECKS)} 个页面）")
+            print(f"\n冒烟测试通过（主题 {expected_theme}，风格 {expected_style}，"
+                  f"共 {len(ROUTE_CHECKS)} 个页面）")
         app.quit()
 
     # 等首屏加载与 bootstrap 完成

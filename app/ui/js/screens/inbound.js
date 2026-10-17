@@ -66,9 +66,8 @@ window.RMS.screens = window.RMS.screens || {};
 
       '        <div class="field">',
       '          <label class="field-label">批号 <span style="color:var(--danger)">*</span></label>',
-      '          <input class="input" list="bl" v-model="form.batch" placeholder="输入或扫码带出"',
-      '                 @change="loadBatches" />',
-      '          <datalist id="bl"><option v-for="b in batches" :key="b" :value="b"></option></datalist>',
+      '          <ui-batch-picker v-model="form.batch" :name="form.name"',
+      '                           placeholder="输入、扫码或下拉选择批号" />',
       '        </div>',
 
       '        <div style="display:flex">',
@@ -115,7 +114,6 @@ window.RMS.screens = window.RMS.screens || {};
       return {
         names: [],
         nameQuery: '',
-        batches: [],
         scanText: '',
         scanState: '',
         gtin: '',
@@ -158,14 +156,6 @@ window.RMS.screens = window.RMS.screens || {};
       },
       pickName: function (n) {
         this.form.name = n;
-        this.loadBatches();
-      },
-      loadBatches: function () {
-        var self = this;
-        if (!this.form.name) { this.batches = []; return; }
-        bridge.call('batches.list', { name: this.form.name }).then(function (data) {
-          self.batches = data.items;
-        });
       },
 
       onScan: function () {
@@ -182,7 +172,7 @@ window.RMS.screens = window.RMS.screens || {};
           self.scanState = 'is-hit';
           self.error = '';
           if (res.gtin) { self.gtin = res.gtin; }
-          if (res.name) { self.form.name = res.name; self.loadBatches(); }
+          if (res.name) { self.form.name = res.name; }
           if (res.batch) { self.form.batch = res.batch; }
           if (res.productionDate) { self.form.productionDate = res.productionDate; }
           if (res.expiryDate) { self.form.expiryDate = res.expiryDate; }

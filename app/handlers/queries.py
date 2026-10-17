@@ -91,6 +91,7 @@ def build_query_handlers(ctx):
             "dbPath": paths.DB_FILE,
             "disclaimerAccepted": integrity.is_disclaimer_accepted(),
             "style": integrity.get_ui_style(),
+            "shortcuts": integrity.get_shortcuts(),
             "pageSizes": [20, 50, 100, 200],
             "maxPageSize": MAX_PAGE_SIZE,
             # 老库可能带着修不了的外键违例进来，只读可用但写入那些行会报错，
@@ -157,6 +158,7 @@ def build_query_handlers(ctx):
     # ------------------------------------------------------------------
     def records_page(payload):
         filters = payload.get("filters") or {}
+        sort = payload.get("sort") or {}
         page = _int(payload, "page", 1, minimum=1)
         page_size = _int(payload, "pageSize", 50, minimum=1, maximum=MAX_PAGE_SIZE)
 
@@ -175,6 +177,8 @@ def build_query_handlers(ctx):
             end_date=end,
             page=page,
             page_size=page_size,
+            sort_col=sort.get("col") or "date",
+            sort_dir=sort.get("dir") or "desc",
         )
 
         items = [{
@@ -217,6 +221,13 @@ def build_query_handlers(ctx):
         name = (payload.get("name") or "").strip()
         if not name:
             return {"items": []}
+        if payload.get("withStock"):
+            return {
+                "items": [
+                    {"batch": batch, "quantity": quantity}
+                    for batch, quantity in db.get_batch_stocks(name)
+                ]
+            }
         return {"items": db.get_batches_by_name(name)}
 
     def reagent_details(payload):

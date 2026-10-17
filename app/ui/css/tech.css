@@ -1,8 +1,8 @@
 /* 科技风格皮肤。
  *
- * 由 <html data-style="tech" data-theme="dark"> 激活；默认风格
- * （data-style="default"）完全不命中这里的任何规则。科技风格只有深色版，
- * 明暗不再单独切换 —— 白色版已取消。
+ * 由 <html data-style="tech" data-theme="dark"> 激活；基础皮肤
+ * （data-style="bright" / "night"）完全不命中这里的任何规则。
+ * 科技风格只有深色版，明暗不再单独切换。
  *
  * 注意：内核是 Chromium 83，不能用 :is()/:where()/:has()/color-mix()/@layer，
  * 也不能用 flex 容器的 gap（grid 的 gap 可用）。
@@ -381,6 +381,15 @@
 
 :root[data-style="tech"] .table tbody tr:hover td:first-child {
   box-shadow: inset 2px 0 0 var(--accent);
+}
+
+/* 过期行悬停时要压过上面的通用 hover 底色，否则只会变蓝灰 */
+:root[data-style="tech"] .table tbody tr.is-expired:hover td {
+  background-color: var(--expiry-expired-bg);
+}
+
+:root[data-style="tech"] .table tbody tr.is-expired:hover td:first-child {
+  box-shadow: inset 2px 0 0 var(--expiry-expired-fg);
 }
 
 :root[data-style="tech"] .table .col-num {
