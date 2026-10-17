@@ -1,16 +1,19 @@
 <!doctype html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN" data-theme="light" data-style="default">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>试剂库存管理系统</title>
 
-<!-- 样式按层叠顺序加载：令牌 -> 基础 -> 布局 -> 组件。
-     Chromium 83 没有 @layer，层级靠加载顺序表达。 -->
+<!-- 样式按层叠顺序加载：令牌 -> 基础 -> 布局 -> 组件 -> 风格皮肤。
+     Chromium 83 没有 @layer，层级靠加载顺序表达。
+     皮肤文件只覆盖各自 [data-style="..."] 下的令牌与装饰，默认风格不受影响。
+     新增皮肤：复制一份皮肤 css 加在这里，再到 js/store.js 的 STYLES 注册。 -->
 <link rel="stylesheet" href="css/tokens.css">
 <link rel="stylesheet" href="css/base.css">
 <link rel="stylesheet" href="css/layout.css">
 <link rel="stylesheet" href="css/components.css">
+<link rel="stylesheet" href="css/tech.css">
 </head>
 <body>
 

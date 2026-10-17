@@ -66,16 +66,28 @@ window.RMS = window.RMS || {};
     props: { current: String },
     template: [
       '<nav class="sidebar-nav">',
-      '  <div class="nav-group-label">库存</div>',
-      '  <button v-for="r in routes" :key="r.key"',
+      '  <button v-for="r in mainRoutes" :key="r.key"',
       '          class="nav-item" :class="{ \'is-active\': r.key === current }"',
       '          @click="go(r.key)">',
       '    <span class="nav-item-dot"></span>{{ r.title }}',
       '  </button>',
       '</nav>',
+      /* 设置入口固定在底部，不跟随上面的列表滚动 */
+      '<div class="sidebar-bottom" v-if="bottomRoutes.length">',
+      '  <button v-for="r in bottomRoutes" :key="r.key"',
+      '          class="nav-item" :class="{ \'is-active\': r.key === current }"',
+      '          @click="go(r.key)">',
+      '    <span class="nav-item-dot"></span>{{ r.title }}',
+      '  </button>',
+      '</div>',
     ].join(''),
     computed: {
-      routes: function () { return router.routes; },
+      mainRoutes: function () {
+        return router.routes.filter(function (r) { return !r.bottom; });
+      },
+      bottomRoutes: function () {
+        return router.routes.filter(function (r) { return r.bottom; });
+      },
     },
     methods: {
       go: function (key) { router.go(key); },
@@ -155,16 +167,19 @@ window.RMS = window.RMS || {};
       '    <header class="topbar">',
       '      <div class="topbar-title">{{ title }}</div>',
       '      <div class="topbar-actions">',
-      '        <button class="btn btn-primary" @click="inboundOpen = true">入库</button>',
-      '        <button class="btn" @click="outboundOpen = true">出库</button>',
+      '        <div class="topbar-actions-main">',
+      '          <button class="btn btn-in" @click="inboundOpen = true">入库</button>',
+      '          <button class="btn btn-out" @click="outboundOpen = true">出库</button>',
+      '        </div>',
+      '        <span class="topbar-divider"></span>',
+      '        <button class="icon-btn" :title="styleTitle" @click="toggleStyle">',
+      '          {{ styleIcon }}</button>',
       '        <button class="icon-btn" :title="themeTitle" @click="toggleTheme">',
       '          {{ themeIcon }}</button>',
       '      </div>',
       '    </header>',
       '    <section class="content">',
       '      <component :is="screenComponent"',
-      '                 @open-inbound="inboundOpen = true"',
-      '                 @open-outbound="outboundOpen = true"',
       '                 @goto-records="gotoRecords"></component>',
       '    </section>',
       '  </main>',
@@ -191,6 +206,10 @@ window.RMS = window.RMS || {};
       themeTitle: function () {
         return store.resolvedTheme === 'dark' ? '切换到浅色主题' : '切换到深色主题';
       },
+      styleIcon: function () { return RMS.findStyle(store.style).icon; },
+      styleTitle: function () {
+        return '切换到' + RMS.nextStyle(store.style).label + '风格';
+      },
       showDisclaimer: function () {
         return store.ready && !store.disclaimerAccepted && !this.disclaimerDismissed;
       },
@@ -198,6 +217,9 @@ window.RMS = window.RMS || {};
     methods: {
       toggleTheme: function () {
         RMS.setTheme(store.resolvedTheme === 'dark' ? 'light' : 'dark');
+      },
+      toggleStyle: function () {
+        RMS.setStyle(RMS.nextStyle(store.style).value);
       },
       closeDrawers: function () {
         this.inboundOpen = false;

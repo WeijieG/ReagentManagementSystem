@@ -27,8 +27,9 @@ python main.py
 不用手点，让它自己遍历所有页面并截图：
 
 ```
-python tools/ui_smoke_test.py                  # 浅色
-python tools/ui_smoke_test.py --theme dark     # 深色
+python tools/ui_smoke_test.py                        # 浅色 + 默认风格
+python tools/ui_smoke_test.py --theme dark           # 深色
+python tools/ui_smoke_test.py --style tech --theme dark   # 深色 + 科技风格
 ```
 
 截图写到 `tools/ui_smoke*.png`。它会检查五个页面与两个抽屉有没有正常渲染，
@@ -306,9 +307,10 @@ ui\                             ← 整个目录，别只拷其中几个文件
 ## 6. 自测
 
 ```
-python -m unittest discover -s tests          # 单元测试，76 项
+python -m unittest discover -s tests          # 单元测试，100 项
 python tools/ui_smoke_test.py                 # 界面冒烟测试，截图到 tools/
 python tools/ui_smoke_test.py --theme dark    # 深色主题
+python tools/ui_smoke_test.py --style tech --theme dark   # 科技风格
 ```
 
 冒烟测试会启动真实主窗口，遍历五个页面与两个抽屉，检查渲染是否正常，

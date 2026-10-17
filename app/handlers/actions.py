@@ -59,6 +59,14 @@ def build_action_handlers(ctx):
         integrity.set_theme(mode)
         return {"mode": mode}
 
+    def style_set(payload):
+        # 具体皮肤名单由前端的 STYLES 注册表维护，这里只校验标识格式
+        style = (payload.get("style") or "default").strip()
+        if not integrity.is_valid_ui_style(style):
+            raise BridgeError(ErrorCode.VALIDATION, f"不支持的界面风格: {style}")
+        integrity.set_ui_style(style)
+        return {"style": style}
+
     def disclaimer_accept(payload):
         accepted = bool(payload.get("accepted", True))
         integrity.set_disclaimer_accepted(accepted)
@@ -177,6 +185,7 @@ def build_action_handlers(ctx):
 
     return {
         "theme.set": theme_set,
+        "style.set": style_set,
         "disclaimer.accept": disclaimer_accept,
         "app.quit": app_quit,
         "names.add": names_add,

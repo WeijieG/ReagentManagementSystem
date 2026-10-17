@@ -20,3 +20,12 @@ PyQtWebEngine-Qt5==5.15.2
 # ---- 业务依赖 ----
 openpyxl==3.0.5
 requests==2.32.4
+
+# ---- 更新服务器（server.py，可选）----
+# 客户端与打包产物都用不到，只有发布更新、在本机跑 server.py 时才需要。
+# 版本受 Python 3.8 约束：Flask 3.1 / Werkzeug 3.1 起已不支持 3.8。
+Flask==3.0.3
+# server.py 生成自签名 HTTPS 证书用。缺了它会退化到 Flask 的 adhoc 证书，
+# 而 adhoc 证书本身也依赖 cryptography —— 所以实际是必需项。
+# 42.0.8 仍支持 Python 3.8；升级前先确认新版本没有放弃 3.8 的预编译轮子。
+cryptography==42.0.8

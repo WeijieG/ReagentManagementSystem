@@ -54,6 +54,56 @@
   background-color: var(--accent-active);
 }
 
+/* 顶栏的出入库动作：按业务语义着色，悬停/按下时填充。
+   图标用伪元素，按钮文本保持“入库/出库”，方便脚本与读屏识别。 */
+.btn-in::before,
+.btn-out::before {
+  margin-right: 6px;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.btn-in::before {
+  content: "＋";
+}
+
+.btn-out::before {
+  content: "－";
+}
+
+.btn-in,
+.btn-out {
+  min-width: 78px;
+  font-weight: 600;
+}
+
+.btn-in {
+  background-color: var(--in-bg);
+  border-color: var(--in-border);
+  color: var(--in-fg);
+}
+
+.btn-out {
+  background-color: var(--out-bg);
+  border-color: var(--out-border);
+  color: var(--out-fg);
+}
+
+.btn-in:hover:not(:disabled),
+.btn-in:active:not(:disabled) {
+  background-color: var(--in-fg);
+  border-color: var(--in-fg);
+  color: var(--text-inverse);
+}
+
+.btn-out:hover:not(:disabled),
+.btn-out:active:not(:disabled) {
+  background-color: var(--out-fg);
+  border-color: var(--out-fg);
+  color: var(--text-inverse);
+}
+
 .btn-danger {
   background-color: var(--danger);
   border-color: var(--danger);
@@ -761,6 +811,12 @@
 .setting-desc {
   font-size: var(--text-sm);
   color: var(--text-muted);
+}
+
+/* 界面风格下拉：固定宽度，不随描述文字伸缩 */
+.setting-select {
+  width: 150px;
+  flex-shrink: 0;
 }
 
 /* 主题分段选择器 */

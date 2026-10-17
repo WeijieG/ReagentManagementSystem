@@ -1,0 +1,536 @@
+/* 科技风格皮肤。
+ *
+ * 由 <html data-style="tech"> 激活；默认风格（data-style="default"）完全
+ * 不命中这里的任何规则。风格与主题（data-theme=light/dark）相互独立：
+ * 这里只重定义令牌并追加装饰，颜色全部由下面两套令牌给出。
+ *
+ * 注意：内核是 Chromium 83，不能用 :is()/:where()/:has()/color-mix()/@layer，
+ * 也不能用 flex 容器的 gap（grid 的 gap 可用）。
+ * 装饰只用渐变、box-shadow、clip-path —— 不用 backdrop-filter:blur()，
+ * 软件渲染下太慢。
+ */
+
+/* ============================================================
+   科技风格令牌 —— 浅色
+   ============================================================ */
+:root[data-style="tech"] {
+  /* ---- 表面：偏冷的工业白 ---- */
+  --bg-app:          #EDF3F7;
+  --bg-surface:      #FBFDFE;
+  --bg-surface-2:    #E4EEF5;
+  --bg-raised:       #FFFFFF;
+  --bg-hover:        #E0EEF7;
+  --bg-active:       #D3E5F0;
+  --bg-scrim:        rgba(6, 20, 30, 0.55);
+
+  /* ---- 文字 ---- */
+  --text-primary:    #0A2230;
+  --text-secondary:  #3B5666;
+  --text-muted:      #5F7889;
+  --text-disabled:   #A5B9C6;
+  --text-inverse:    #FFFFFF;
+  --text-on-accent:  #FFFFFF;
+
+  /* ---- 描边 ---- */
+  --border:          #C6DAE6;
+  --border-subtle:   #DCE9F1;
+  --border-strong:   #96B6C8;
+  --border-focus:    #007594;
+
+  /* ---- 强调色：青蓝 ---- */
+  --accent:          #007594;
+  --accent-hover:    #006580;
+  --accent-active:   #00566C;
+  --accent-subtle:   #DFF4FB;
+  --accent-fg:       #FFFFFF;
+  --accent-ring:     rgba(0, 117, 148, 0.28);
+
+  /* ---- 出入库语义色 ---- */
+  --in-fg:           #0B7A55;
+  --in-bg:           #E4F5EE;
+  --in-border:       #ABDEC9;
+  --out-fg:          #B02A2A;
+  --out-bg:          #FBEDED;
+  --out-border:      #EDC0C0;
+
+  /* ---- 效期状态色 ---- */
+  --expiry-expired-fg:  #B02A2A;
+  --expiry-expired-bg:  #FBEDED;
+  --expiry-warn30-fg:   #A65A00;
+  --expiry-warn30-bg:   #FFF2E4;
+  --expiry-warn90-fg:   #7E6900;
+  --expiry-warn90-bg:   #FFF9DF;
+  --expiry-ok-fg:       #0B7A55;
+  --expiry-ok-bg:       #E4F5EE;
+
+  /* ---- 通用状态色 ---- */
+  --success:         #0B7A55;
+  --success-bg:      #E4F5EE;
+  --warning:         #A65A00;
+  --warning-bg:      #FFF2E4;
+  --danger:          #C02B2B;
+  --danger-bg:       #FBEDED;
+  --info:            #007594;
+  --info-bg:         #E1F4FA;
+
+  /* ---- 阴影：带一点冷色 ---- */
+  --shadow-1: 0 1px 2px rgba(6, 34, 48, 0.08);
+  --shadow-2: 0 6px 18px rgba(6, 34, 48, 0.10);
+  --shadow-modal: 0 18px 44px rgba(6, 34, 48, 0.22), 0 2px 8px rgba(6, 34, 48, 0.08);
+
+  /* ---- 棱角化的圆角 ---- */
+  --radius-sm: 3px;
+  --radius-md: 5px;
+  --radius-lg: 8px;
+  --radius-pill: 3px;
+
+  /* ---- 皮肤专用装饰色 ---- */
+  --tech-grid-line:   rgba(0, 117, 148, 0.07);
+  --tech-glow:        rgba(0, 169, 214, 0.16);
+  --tech-glow-strong: rgba(0, 169, 214, 0.32);
+  --tech-hud-line:    rgba(0, 117, 148, 0.40);
+  --tech-header-bg:   linear-gradient(180deg, #EBF6FA 0%, #E2EFF6 100%);
+}
+
+/* ============================================================
+   科技风格令牌 —— 深色（深空 + 霓虹青）
+   ============================================================ */
+:root[data-style="tech"][data-theme="dark"] {
+  --bg-app:          #04090F;
+  --bg-surface:      #0A1520;
+  --bg-surface-2:    #0D1C29;
+  --bg-raised:       #0F2132;
+  --bg-hover:        #132B3E;
+  --bg-active:       #19384F;
+  --bg-scrim:        rgba(0, 0, 0, 0.65);
+
+  --text-primary:    #D8F2FF;
+  --text-secondary:  #92B7CB;
+  --text-muted:      #6B8EA3;
+  --text-disabled:   #395162;
+  --text-inverse:    #04090F;
+  --text-on-accent:  #031016;
+
+  --border:          #143247;
+  --border-subtle:   #0E2435;
+  --border-strong:   #255069;
+  --border-focus:    #22D3EE;
+
+  --accent:          #22D3EE;
+  --accent-hover:    #67E8F9;
+  --accent-active:   #06B6D4;
+  --accent-subtle:   #06222E;
+  --accent-fg:       #031016;
+  --accent-ring:     rgba(34, 211, 238, 0.30);
+
+  --in-fg:           #3EE6A8;
+  --in-bg:           #07271D;
+  --in-border:       #14503A;
+  --out-fg:          #FF7A8A;
+  --out-bg:          #2A0F16;
+  --out-border:      #57222C;
+
+  --expiry-expired-fg:  #FF7A8A;
+  --expiry-expired-bg:  #2A0F16;
+  --expiry-warn30-fg:   #FFB454;
+  --expiry-warn30-bg:   #2B1A08;
+  --expiry-warn90-fg:   #FFE066;
+  --expiry-warn90-bg:   #292205;
+  --expiry-ok-fg:       #3EE6A8;
+  --expiry-ok-bg:       #07271D;
+
+  --success:         #3EE6A8;
+  --success-bg:      #07271D;
+  --warning:         #FFB454;
+  --warning-bg:      #2B1A08;
+  --danger:          #FF7A8A;
+  --danger-bg:       #2A0F16;
+  --info:            #5CD7F5;
+  --info-bg:         #06232E;
+
+  --shadow-1: 0 1px 2px rgba(0, 0, 0, 0.50);
+  --shadow-2: 0 6px 18px rgba(0, 0, 0, 0.55);
+  --shadow-modal: 0 20px 48px rgba(0, 0, 0, 0.70), 0 0 24px rgba(34, 211, 238, 0.08);
+
+  --tech-grid-line:   rgba(34, 211, 238, 0.055);
+  --tech-glow:        rgba(34, 211, 238, 0.16);
+  --tech-glow-strong: rgba(34, 211, 238, 0.40);
+  --tech-hud-line:    rgba(34, 211, 238, 0.45);
+  --tech-header-bg:   linear-gradient(180deg, #0C1F2E 0%, #081522 100%);
+}
+
+/* ============================================================
+   外壳：网格地面 + HUD 侧栏
+   ============================================================ */
+:root[data-style="tech"] .content {
+  background-color: var(--bg-app);
+  background-image:
+    radial-gradient(ellipse at 85% 0%, var(--tech-glow) 0%, rgba(0, 0, 0, 0) 55%),
+    linear-gradient(var(--tech-grid-line) 1px, rgba(0, 0, 0, 0) 1px),
+    linear-gradient(90deg, var(--tech-grid-line) 1px, rgba(0, 0, 0, 0) 1px);
+  background-size: 100% 100%, 32px 32px, 32px 32px;
+  background-attachment: local;
+}
+
+/* 整栏是一块 HUD 面板，导航项是面板里的锐角小卡片 */
+:root[data-style="tech"] .sidebar {
+  position: relative;
+  background-color: var(--bg-surface);
+  background-image: linear-gradient(180deg, var(--tech-glow) 0%, rgba(0, 0, 0, 0) 42%);
+  border-right-color: var(--border);
+}
+
+/* 侧栏右缘的能量线，上端最亮、向下渐隐再回光 */
+:root[data-style="tech"] .sidebar::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 1px;
+  background-image: linear-gradient(180deg,
+    var(--accent) 0%,
+    var(--tech-hud-line) 28%,
+    rgba(0, 0, 0, 0) 62%,
+    var(--tech-hud-line) 100%);
+  pointer-events: none;
+}
+
+:root[data-style="tech"] .sidebar-brand {
+  background-image: var(--tech-header-bg);
+  border-bottom-color: var(--border-strong);
+}
+
+/* 六边形标记；clip-path 会裁掉 box-shadow，辉光改用 drop-shadow */
+:root[data-style="tech"] .sidebar-brand-mark {
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  filter: drop-shadow(0 0 6px var(--tech-glow-strong));
+}
+
+:root[data-style="tech"] .sidebar-brand-text {
+  letter-spacing: 0.08em;
+}
+
+:root[data-style="tech"] .nav-item {
+  background-color: var(--bg-surface-2);
+  border: 1px solid var(--border);
+  border-left: 2px solid var(--border);
+  box-shadow: none;
+}
+
+:root[data-style="tech"] .nav-item:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-strong);
+  border-left-color: var(--accent);
+}
+
+:root[data-style="tech"] .nav-item.is-active {
+  background-color: var(--bg-surface-2);
+  background-image: linear-gradient(90deg, var(--accent-subtle) 0%, rgba(0, 0, 0, 0) 92%);
+  border-color: var(--border-strong);
+  border-left-color: var(--accent);
+  box-shadow: inset 0 0 0 1px var(--border-subtle);
+}
+
+/* 导航圆点改成斜方块 */
+:root[data-style="tech"] .nav-item-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 0;
+  transform: rotate(45deg);
+}
+
+:root[data-style="tech"] .sidebar-bottom {
+  border-top-color: var(--border-strong);
+}
+
+:root[data-style="tech"] .sidebar-footer {
+  border-top-color: var(--border-strong);
+  font-family: var(--font-mono);
+  letter-spacing: 0.04em;
+}
+
+:root[data-style="tech"] .topbar {
+  background-image: var(--tech-header-bg);
+  border-bottom-color: var(--border-strong);
+  box-shadow: 0 1px 0 var(--tech-hud-line);
+}
+
+:root[data-style="tech"] .topbar-title {
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.05em;
+}
+
+:root[data-style="tech"] .topbar-title::before {
+  content: "";
+  width: 3px;
+  height: 18px;
+  margin-right: var(--space-3);
+  background-image: linear-gradient(180deg, var(--accent) 0%, var(--accent-active) 100%);
+  box-shadow: 0 0 8px var(--tech-glow-strong);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   按钮：主操作做成切角 HUD 样式
+   ============================================================ */
+:root[data-style="tech"] .btn {
+  border-radius: var(--radius-sm);
+  letter-spacing: 0.02em;
+}
+
+:root[data-style="tech"] .btn:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+/* 语义按钮保持自己的颜色，不被上一条 hover 规则染成强调色 */
+:root[data-style="tech"] .btn-in:hover:not(:disabled),
+:root[data-style="tech"] .btn-in:active:not(:disabled) {
+  border-color: var(--in-fg);
+}
+
+:root[data-style="tech"] .btn-out:hover:not(:disabled),
+:root[data-style="tech"] .btn-out:active:not(:disabled) {
+  border-color: var(--out-fg);
+}
+
+:root[data-style="tech"] .btn-primary {
+  border-color: transparent;
+  background-image: linear-gradient(180deg, var(--accent) 0%, var(--accent-active) 100%);
+  clip-path: polygon(0 0, calc(100% - 9px) 0, 100% 9px, 100% 100%, 9px 100%, 0 calc(100% - 9px));
+  font-weight: 600;
+  letter-spacing: 0.06em;
+}
+
+:root[data-style="tech"] .btn-primary:hover:not(:disabled) {
+  border-color: transparent;
+  background-image: linear-gradient(180deg, var(--accent-hover) 0%, var(--accent) 100%);
+}
+
+:root[data-style="tech"] .btn-primary:active:not(:disabled) {
+  background-image: none;
+  background-color: var(--accent-active);
+}
+
+:root[data-style="tech"] .btn-primary:disabled {
+  background-image: none;
+}
+
+:root[data-style="tech"] .icon-btn {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background-color: var(--bg-surface);
+}
+
+:root[data-style="tech"] .icon-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  box-shadow: 0 0 8px var(--tech-glow);
+}
+
+/* ============================================================
+   表单
+   ============================================================ */
+:root[data-style="tech"] .input,
+:root[data-style="tech"] .select {
+  background-color: var(--bg-surface-2);
+  border-color: var(--border-strong);
+}
+
+:root[data-style="tech"] .input:focus,
+:root[data-style="tech"] .select:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-ring), 0 0 12px var(--tech-glow);
+}
+
+:root[data-style="tech"] .scan-input::before {
+  border-color: var(--accent);
+  border-top-color: transparent;
+  border-left-color: transparent;
+}
+
+/* ============================================================
+   卡片：四角 HUD 括号
+   ============================================================ */
+:root[data-style="tech"] .card,
+:root[data-style="tech"] .stat-card {
+  position: relative;
+  border-color: var(--border-strong);
+}
+
+:root[data-style="tech"] .card::before,
+:root[data-style="tech"] .stat-card::before {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  top: -1px;
+  left: -1px;
+  width: 16px;
+  height: 16px;
+  border-top: 2px solid var(--accent);
+  border-left: 2px solid var(--accent);
+  pointer-events: none;
+}
+
+:root[data-style="tech"] .card::after,
+:root[data-style="tech"] .stat-card::after {
+  content: "";
+  position: absolute;
+  z-index: 2;
+  right: -1px;
+  bottom: -1px;
+  width: 16px;
+  height: 16px;
+  border-right: 2px solid var(--accent);
+  border-bottom: 2px solid var(--accent);
+  pointer-events: none;
+}
+
+:root[data-style="tech"] .card-header {
+  background-image: linear-gradient(90deg, var(--accent-subtle) 0%, rgba(0, 0, 0, 0) 72%);
+  border-bottom-color: var(--border-strong);
+}
+
+:root[data-style="tech"] .card-title {
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.04em;
+}
+
+:root[data-style="tech"] .card-title::before {
+  content: "";
+  width: 3px;
+  height: 14px;
+  margin-right: var(--space-2);
+  background-color: var(--accent);
+  box-shadow: 0 0 6px var(--tech-glow-strong);
+  flex-shrink: 0;
+}
+
+/* ============================================================
+   统计卡
+   ============================================================ */
+:root[data-style="tech"] .stat-card {
+  background-image: linear-gradient(180deg, var(--tech-glow) 0%, rgba(0, 0, 0, 0) 55%);
+}
+
+:root[data-style="tech"] .stat-label {
+  font-family: var(--font-mono);
+  font-size: var(--text-xs);
+  letter-spacing: 0.14em;
+}
+
+:root[data-style="tech"] .stat-value {
+  font-family: var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+:root[data-style="tech"][data-theme="dark"] .stat-value {
+  text-shadow: 0 0 14px var(--tech-glow-strong);
+}
+
+/* ============================================================
+   表格
+   ============================================================ */
+:root[data-style="tech"] .table thead th {
+  background-color: var(--bg-surface-2);
+  border-bottom-color: var(--border-strong);
+  font-family: var(--font-mono);
+  letter-spacing: 0.12em;
+}
+
+:root[data-style="tech"] .table tbody tr:hover td {
+  background-color: var(--bg-hover);
+}
+
+:root[data-style="tech"] .table tbody tr:hover td:first-child {
+  box-shadow: inset 2px 0 0 var(--accent);
+}
+
+:root[data-style="tech"] .table .col-num {
+  font-family: var(--font-mono);
+}
+
+/* ============================================================
+   徽章 / 分段选择器 / 进度条
+   ============================================================ */
+:root[data-style="tech"] .badge {
+  border-radius: 2px;
+  letter-spacing: 0.04em;
+}
+
+:root[data-style="tech"] .segmented {
+  border-color: var(--border-strong);
+  border-radius: var(--radius-sm);
+}
+
+:root[data-style="tech"] .segmented button.is-active {
+  background-image: linear-gradient(180deg, var(--accent) 0%, var(--accent-active) 100%);
+  box-shadow: 0 0 10px var(--tech-glow);
+}
+
+:root[data-style="tech"] .progress {
+  border: 1px solid var(--border);
+  background-color: var(--bg-surface-2);
+}
+
+:root[data-style="tech"] .progress-bar {
+  background-color: var(--accent);
+  background-image: linear-gradient(90deg, var(--accent-active) 0%, var(--accent-hover) 100%);
+  box-shadow: 0 0 10px var(--tech-glow-strong);
+}
+
+/* ============================================================
+   弹窗 / 抽屉 / Toast
+   ============================================================ */
+:root[data-style="tech"] .modal {
+  border-color: var(--border-strong);
+  box-shadow: var(--shadow-modal), 0 0 28px var(--tech-glow);
+}
+
+:root[data-style="tech"] .modal-header {
+  background-image: var(--tech-header-bg);
+  border-bottom-color: var(--border-strong);
+}
+
+:root[data-style="tech"] .modal-title {
+  display: flex;
+  align-items: center;
+  letter-spacing: 0.05em;
+}
+
+:root[data-style="tech"] .modal-title::before {
+  content: "";
+  width: 3px;
+  height: 16px;
+  margin-right: var(--space-2);
+  background-color: var(--accent);
+  box-shadow: 0 0 8px var(--tech-glow-strong);
+  flex-shrink: 0;
+}
+
+:root[data-style="tech"] .modal-footer {
+  background-color: var(--bg-surface-2);
+  border-top-color: var(--border-strong);
+}
+
+:root[data-style="tech"] .drawer {
+  border-left: 2px solid var(--accent);
+  box-shadow: var(--shadow-modal), 0 0 28px var(--tech-glow);
+}
+
+:root[data-style="tech"] .toast {
+  box-shadow: var(--shadow-2), 0 0 16px var(--tech-glow);
+}
+
+/* ============================================================
+   滚动条
+   ============================================================ */
+:root[data-style="tech"] ::-webkit-scrollbar-thumb {
+  background-color: var(--border-strong);
+}
+
+:root[data-style="tech"] ::-webkit-scrollbar-thumb:hover {
+  background-color: var(--accent);
+}

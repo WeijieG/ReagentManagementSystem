@@ -15,10 +15,12 @@
 
 /* ============================================================
    侧边导航
+   整个左栏是一块完整的侧边栏；栏内每个导航项是一张独立卡片。
    ============================================================ */
 .sidebar {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   background-color: var(--bg-surface-2);
   border-right: 1px solid var(--border);
   overflow: hidden;
@@ -66,41 +68,44 @@
 
 .sidebar-nav {
   flex: 1;
+  min-height: 0;
   overflow-y: auto;
-  padding: var(--space-3) var(--space-2);
+  /* 顶部与内容区保持同样的 20px，删掉分组标签后两栏首行自然齐平 */
+  padding: var(--space-5) var(--space-3) var(--space-3);
 }
 
-.nav-group-label {
-  font-size: var(--text-xs);
-  font-weight: 600;
-  color: var(--text-muted);
-  padding: var(--space-4) var(--space-3) var(--space-2);
-  letter-spacing: 0.06em;
-}
-
+/* 每个导航项一张卡片 */
 .nav-item {
   display: flex;
   align-items: center;
   width: 100%;
-  padding: var(--space-3);
-  margin-bottom: 2px;
-  border: 0;
+  padding: 11px var(--space-3);
+  margin-bottom: var(--space-2);
+  border: 1px solid var(--border);
   border-radius: var(--radius-sm);
-  background: transparent;
+  background-color: var(--bg-raised);
+  box-shadow: var(--shadow-1);
   color: var(--text-secondary);
   font-size: var(--text-base);
   text-align: left;
   transition: background-color var(--dur-fast) var(--ease-out),
+              border-color var(--dur-fast) var(--ease-out),
               color var(--dur-fast) var(--ease-out);
+}
+
+.nav-item:last-child {
+  margin-bottom: 0;
 }
 
 .nav-item:hover {
   background-color: var(--bg-hover);
+  border-color: var(--border-strong);
   color: var(--text-primary);
 }
 
 .nav-item.is-active {
   background-color: var(--accent-subtle);
+  border-color: var(--accent);
   color: var(--accent);
   font-weight: 600;
 }
@@ -128,6 +133,17 @@
   font-size: var(--text-xs);
   font-weight: 600;
   line-height: 1.5;
+}
+
+/* 置底入口（设置）：不随主导航滚动 */
+.sidebar-bottom {
+  flex-shrink: 0;
+  padding: var(--space-2) var(--space-3) var(--space-3);
+  border-top: 1px solid var(--border-subtle);
+}
+
+.sidebar-bottom .nav-item {
+  margin-bottom: 0;
 }
 
 .sidebar-footer {
@@ -164,6 +180,10 @@
   color: var(--text-primary);
   margin-right: var(--space-5);
   white-space: nowrap;
+  flex-shrink: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .topbar-scan {
@@ -176,10 +196,29 @@
   display: flex;
   align-items: center;
   margin-left: auto;
+  flex-shrink: 0;
 }
 
 .topbar-actions > * {
   margin-left: var(--space-2);
+}
+
+/* 入库/出库成对放在左侧，工具按钮用竖线隔开 */
+.topbar-actions-main {
+  display: flex;
+  align-items: center;
+}
+
+.topbar-actions-main > * + * {
+  margin-left: var(--space-2);
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 20px;
+  margin-left: var(--space-3);
+  background-color: var(--border);
+  flex-shrink: 0;
 }
 
 .content {
@@ -212,4 +251,101 @@
 
 .page-toolbar .spacer {
   flex: 1;
+}
+
+/* ============================================================
+   筛选工具栏
+   宽屏一行；窄于 1120px 时按组折成两行：
+   搜索 + 操作一行，筛选条件一行，避免控件零散换行。
+   ============================================================ */
+.filter-toolbar {
+  display: grid;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
+
+.filter-toolbar .input,
+.filter-toolbar .select {
+  width: 100%;
+}
+
+.filter-toolbar-inventory {
+  grid-template-columns:
+    minmax(250px, 1.7fr) minmax(150px, 1fr)
+    minmax(110px, 0.7fr) minmax(135px, 0.85fr) auto;
+}
+
+.filter-toolbar-records {
+  grid-template-columns:
+    minmax(240px, 1.6fr) minmax(110px, 0.6fr)
+    minmax(140px, 0.9fr) minmax(110px, 0.7fr) auto;
+}
+
+.filter-reset,
+.filter-export {
+  justify-self: end;
+}
+
+@media (max-width: 1120px) {
+  .filter-toolbar-inventory,
+  .filter-toolbar-records {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .filter-toolbar-inventory {
+    grid-template-areas:
+      "scan scan reset"
+      "name batch expiry";
+  }
+
+  .filter-toolbar-records {
+    grid-template-areas:
+      "scan scan export"
+      "type name batch";
+  }
+
+  .filter-scan { grid-area: scan; }
+  .filter-name { grid-area: name; }
+  .filter-batch { grid-area: batch; }
+  .filter-expiry { grid-area: expiry; }
+  .filter-type { grid-area: type; }
+  .filter-reset { grid-area: reset; }
+  .filter-export { grid-area: export; }
+}
+
+/* 日期筛选：快捷按钮组与日期输入组各自成组，整组换行 */
+.date-toolbar {
+  align-items: center;
+}
+
+.date-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.date-label {
+  margin-right: var(--space-2);
+}
+
+.date-preset {
+  margin-right: 6px;
+}
+
+.date-preset:last-child {
+  margin-right: 0;
+}
+
+.date-range {
+  display: flex;
+  align-items: center;
+}
+
+.date-input {
+  width: 150px;
+}
+
+.date-sep {
+  margin: 0 var(--space-2);
 }

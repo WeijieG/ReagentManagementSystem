@@ -91,6 +91,7 @@ def build_query_handlers(ctx):
             "dbPath": paths.DB_FILE,
             "disclaimerAccepted": integrity.is_disclaimer_accepted(),
             "theme": integrity.get_theme(),
+            "style": integrity.get_ui_style(),
             "pageSizes": [20, 50, 100, 200],
             "maxPageSize": MAX_PAGE_SIZE,
             # 老库可能带着修不了的外键违例进来，只读可用但写入那些行会报错，

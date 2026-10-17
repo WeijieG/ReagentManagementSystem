@@ -14,7 +14,8 @@ window.RMS = window.RMS || {};
     { key: 'inventory', title: '库存管理' },
     { key: 'records',   title: '出入库记录' },
     { key: 'names',     title: '试剂名称' },
-    { key: 'settings',  title: '设置' },
+    // bottom: true 的路由固定在侧栏底部，不随主导航列表滚动
+    { key: 'settings',  title: '设置', bottom: true },
   ];
 
   var KEYS = ROUTES.map(function (r) { return r.key; });

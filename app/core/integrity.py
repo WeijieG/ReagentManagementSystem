@@ -13,6 +13,7 @@ import configparser
 import hashlib
 import json
 import os
+import re
 
 from .. import paths
 
@@ -220,4 +221,30 @@ def set_theme(mode):
     if not user_data.has_section('General'):
         user_data.add_section('General')
     user_data.set('General', 'Theme', mode)
+    _save_user_data(user_data)
+
+
+# 皮肤标识只约束成可安全写进 data-style 的形态，不锁死具体名单：
+# 前端 store.js 的 STYLES 才是皮肤清单，新增皮肤无需改后端。
+UI_STYLE_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,31}$")
+
+
+def is_valid_ui_style(style):
+    return bool(UI_STYLE_PATTERN.match(style or ""))
+
+
+def get_ui_style():
+    """界面风格偏好：default（默认） / tech（科技）等，与主题相互独立。"""
+    user_data = _load_user_data()
+    style = user_data.get('General', 'UIStyle', fallback='default')
+    return style if is_valid_ui_style(style) else 'default'
+
+
+def set_ui_style(style):
+    if not is_valid_ui_style(style):
+        raise ValueError(f"不支持的界面风格: {style}")
+    user_data = _load_user_data()
+    if not user_data.has_section('General'):
+        user_data.add_section('General')
+    user_data.set('General', 'UIStyle', style)
     _save_user_data(user_data)

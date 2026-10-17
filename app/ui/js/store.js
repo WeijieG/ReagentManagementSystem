@@ -12,6 +12,34 @@ window.RMS = window.RMS || {};
 
   var bridge = RMS.bridge;
 
+  /* 可用皮肤清单。顺序即顶栏快捷切换的轮换顺序。
+   * 新增皮肤只需要两步：
+   *   1. 在 css 里补一套 [data-style="<id>"] 规则；
+   *   2. 往下面加一行（value 用小写字母/数字/连字符）。
+   * 设置页下拉与顶栏按钮都读这份清单，后端不需要跟着改。
+   */
+  var STYLES = [
+    { value: 'default', label: '默认', icon: '▦' },
+    { value: 'tech', label: '科技', icon: '◈' },
+  ];
+
+  function findStyle(value) {
+    for (var i = 0; i < STYLES.length; i++) {
+      if (STYLES[i].value === value) { return STYLES[i]; }
+    }
+    return STYLES[0];
+  }
+
+  function nextStyle(value) {
+    var current = findStyle(value);
+    for (var i = 0; i < STYLES.length; i++) {
+      if (STYLES[i] === current) {
+        return STYLES[(i + 1) % STYLES.length];
+      }
+    }
+    return STYLES[0];
+  }
+
   var store = Vue.reactive({
     // 应用信息
     ready: false,
@@ -22,6 +50,9 @@ window.RMS = window.RMS || {};
     // 主题：light / dark / system
     theme: 'system',
     resolvedTheme: 'light',
+
+    // 界面风格：default（默认） / tech（科技），与主题相互独立
+    style: 'default',
 
     // 免责声明
     disclaimerAccepted: true,
@@ -102,6 +133,23 @@ window.RMS = window.RMS || {};
     });
   }
 
+  /* ---------------- 界面风格 ---------------- */
+
+  function applyStyle(style) {
+    // 未知皮肤（例如旧配置里的值）回落到默认，避免界面停在半套样式上
+    var resolved = findStyle(style).value;
+    store.style = resolved;
+    document.documentElement.setAttribute('data-style', resolved);
+  }
+
+  function setStyle(style) {
+    applyStyle(style);
+    // 与主题一样落盘到 userData.ini
+    bridge.call('style.set', { style: store.style }).catch(function (err) {
+      console.warn('[style] 保存界面风格偏好失败:', err.message);
+    });
+  }
+
   /* ---------------- Toast ---------------- */
 
   function toast(kind, text, timeoutMs) {
@@ -131,11 +179,13 @@ window.RMS = window.RMS || {};
       store.dbPath = info.dbPath || '';
       store.disclaimerAccepted = !!info.disclaimerAccepted;
       store.theme = info.theme || 'system';
+      store.style = info.style || 'default';
       store.dbRepaired = info.dbRepaired || [];
       store.dbIssues = info.dbIssues || [];
       store.networkOk = info.networkOk !== false;
       store.networkError = info.networkError || '';
       applyTheme(store.theme);
+      applyStyle(store.style);
       store.ready = true;
 
       // 网络组件坏掉只影响"检查更新"，不影响库存与出入库 ——
@@ -173,6 +223,10 @@ window.RMS = window.RMS || {};
     if (data && data.mode) { store.theme = data.mode; applyTheme(data.mode); }
   });
 
+  bridge.on('style.changed', function (data) {
+    if (data && data.style) { applyStyle(data.style); }
+  });
+
   // 跟随系统主题：仅在用户选「跟随系统」时生效
   if (window.matchMedia) {
     var mq = window.matchMedia('(prefers-color-scheme: dark)');
@@ -184,8 +238,12 @@ window.RMS = window.RMS || {};
   }
 
   RMS.store = store;
+  RMS.styles = STYLES;
+  RMS.findStyle = findStyle;
+  RMS.nextStyle = nextStyle;
   RMS.bootstrap = bootstrap;
   RMS.setTheme = setTheme;
+  RMS.setStyle = setStyle;
   RMS.toast = toast;
   RMS.dismissToast = dismissToast;
 }(window.RMS));
